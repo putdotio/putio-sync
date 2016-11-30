@@ -1,0 +1,17 @@
+@import "../../../common/style";
+
+.table-column {
+  float: left; /*fix for  buggy browsers*/
+  display: table-column;
+  height: 100%;
+  .lh-box-sizing(border-box);
+  vertical-align: middle;
+
+  &.left-aligned {
+    text-align: left;
+  }
+
+  &.right-aligned {
+    text-align: right;
+  }
+}

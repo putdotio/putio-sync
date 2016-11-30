@@ -1,0 +1,50 @@
+@import "../../common/style";
+
+@import "./row/style";
+@import "./column/style";
+@import "./header/style";
+
+@table-height: 50px;
+
+.generate-columns(@container-width; @number-cols; @i: 1) when (@i =< @number-cols) {
+  .col-@{i} {
+    width: calc(@container-width / @number-cols * @i);
+  }
+
+  .generate-columns(@container-width; @number-cols; @i + 1);
+}
+
+.table {
+  display: table;
+  width: 100%;
+  border-collapse: collapse;
+
+  .generate-columns(100%, 12);
+
+  .table-row, .table-column {
+    min-height: @table-height;
+    line-height: @table-height
+  }
+
+  &.first-column-label {
+    .table-column:first-child {
+      padding-left: 10px;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 1.279px;
+      color: @gray;
+    }
+  }
+
+  &.table-hover {
+    .table-row:hover {
+      background: #f9f9f9;
+    }
+  }
+
+  &.table-centered {
+    .table-column {
+      text-align: center;
+    }
+  }
+}

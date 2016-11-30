@@ -1,0 +1,28 @@
+@import "../../../common/style";
+
+.radiobutton {
+  height: 20px;
+
+  label {
+    background-image:url('/statics/img/checkbox-circle@2x.png');
+    .lh-user-select(none);
+    font-size: 12px;
+    padding-left: 30px;
+    line-height: 20px;
+    height: 20px;
+    display: block;
+    background-repeat: no-repeat;
+    background-position: 0px 0px;
+    background-size: 20px 40px;
+    cursor: pointer;
+    background-color: transparent;
+  }
+
+  input {
+    display: none;
+  }
+
+  input:checked + label {
+    background-position: 0 -20px;
+  }
+}

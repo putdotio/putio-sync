@@ -1,0 +1,58 @@
+@import "../common/style";
+
+.gradient() {
+  /* Permalink - use to edit and share this gradient: http://colorzilla.com/gradient-editor/#e0e0e0+0,f2f2f2+41,ffffff+100 */
+  background: #e0e0e0; /* Old browsers */
+  background: -moz-linear-gradient(top, #e0e0e0 0%, #f2f2f2 41%, #ffffff 100%); /* FF3.6-15 */
+  background: -webkit-linear-gradient(top, #e0e0e0 0%,#f2f2f2 41%,#ffffff 100%); /* Chrome10-25,Safari5.1-6 */
+  background: linear-gradient(to bottom, #e0e0e0 0%,#f2f2f2 41%,#ffffff 100%); /* W3C, IE10+, FF16+, Chrome26+, Opera12+, Safari7+ */
+  filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#e0e0e0', endColorstr='#ffffff',GradientType=0 ); /* IE6-9 */
+}
+
+header {
+  width: 100%;
+  max-width: @site-max-width;
+  height: @header-height;
+  padding: 0 30px;
+  background: #fff;
+  position: fixed;
+  top: 0;
+  z-index: 99999;
+  .gradient();
+  .lh-box-sizing(border-box);
+
+  .left {
+    float: left;
+    line-height: @header-height;
+    width: 150px;
+
+    .status {
+      font-size: 18px;
+
+      &.status-syncing {
+        color: @green;
+      }
+
+      .message {
+      }
+
+      .action {
+        display: none;
+      }
+    }
+  }
+
+  .right {
+    float: right;
+    line-height: @header-height;
+
+    .item {
+      display: inline-block;
+      margin-right: 10px;
+
+      &:last-child {
+        margin-right: 0;
+      }
+    }
+  }
+}

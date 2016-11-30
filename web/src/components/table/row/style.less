@@ -1,0 +1,22 @@
+@import "../../../common/style";
+
+.table-row {
+  display: table-row;
+  width: 100%;
+  clear:both;
+  .lh-box-sizing(border-box);
+  border-bottom: 1px solid @input-bg;
+  overflow: hidden;
+
+  &.table-row-success {
+    background: @green;
+
+    &:hover {
+      background: @green !important;
+    }
+
+    .table-column {
+      color: white !important;
+    }
+  }
+}

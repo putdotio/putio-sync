@@ -1,0 +1,24 @@
+@import "../../../common/style";
+
+.modal-footer {
+  margin-top: 15px;
+  clear: both;
+  overflow: hidden;
+
+  .modal-footer-actions {
+    float: right;
+
+    .modal-footer-action {
+      float: left;
+      margin-right: 20px;
+
+      &:last-child {
+        margin-right: 0;
+      }
+
+      a {
+        line-height: @button-height;
+      }
+    }
+  }
+}

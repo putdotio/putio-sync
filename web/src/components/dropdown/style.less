@@ -1,0 +1,87 @@
+@import "../../common/style";
+
+.dropdown-with-color(
+  @bg: #eceef2;
+  @color: #000;
+  @grade: 20%)
+{
+  background: @bg;
+  color: @color;
+
+  &:hover {
+    background: darken(@bg, @grade);
+  }
+}
+
+.dropdown {
+  position: relative;
+  height: 38px;
+
+  .btn {
+    text-align: left;
+  }
+
+  .dropdown-content {
+    display: none;
+    position: absolute;
+    top: 38px;
+    left: 0;
+    width: 100%;
+    z-index: 9999;
+
+    .dropdown-option {
+      color: #000;
+      height: 38px;
+      width: 100%;
+      padding: 0px 20px;
+      line-height: 38px;
+      font-size: 12px;
+      display: block;
+      position: relative;
+      text-transform: uppercase;
+      letter-spacing: 1.279px;
+      .lh-box-sizing(border-box);
+      cursor: pointer;
+      text-align: initial;
+
+      &.with-icon {
+        padding-left: 45px;
+      }
+
+      &.btn-default {
+        .dropdown-with-color();
+
+        &:hover {
+          background: #000;
+          color: #fff;
+        }
+      }
+
+      &.btn-warning {
+        .dropdown-with-color(@yellow, #000, 10%);
+      }
+
+      &.btn-success {
+        .dropdown-with-color(@green, #fff, 4%);
+      }
+
+      i:first-child {
+        position: absolute;
+        left: 20px;
+        top: 0;
+      }
+
+      i:last-child {
+        position: absolute;
+        right: 20px;
+        top: 0;
+      }
+    }
+  }
+
+  &:hover {
+    .dropdown-content {
+      display: block;
+    }
+  }
+}

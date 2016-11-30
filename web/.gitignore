@@ -1,0 +1,5 @@
+.DS_Store
+.transifex.js
+node_modules
+build
+po/*.orig

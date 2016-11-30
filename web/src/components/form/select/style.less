@@ -1,0 +1,26 @@
+@import "../../../common/style";
+
+.form-select {
+  select {
+    width: 100%;
+    height: @button-height;
+    font-family: "Montserrat";
+    font-size: 12px;
+    line-height: @button-height;
+    text-indent: 15px;
+    cursor: pointer;
+    border: none;
+    .lh-appearance();
+    .lh-border-radius(2px);
+
+    &.gray {
+      background: @input-bg;
+      color: #000;
+    }
+
+    &.black {
+      background: #000;
+      color: #fff;
+    }
+  }
+}

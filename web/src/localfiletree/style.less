@@ -1,0 +1,64 @@
+@import "../common/style";
+
+#filetree {
+  margin-top: 20px;
+  background-color: #eceef2;
+  .lh-box-sizing(border-box);
+  border-width: 2px;
+  border: 1px solid #cacaca;
+  height: 250px;
+  max-height: 250px;
+  overflow: scroll;
+  padding-top: 10px;
+
+  ul {
+    li {
+      padding-left: 20px;
+      height: 30px;
+      line-height: 30px;
+      width: 100%;
+      display: table;
+      .lh-box-sizing(border-box);
+
+      .item-content {
+        position: relative;
+
+        .indicator {
+          cursor: pointer;
+
+          i {
+            margin-left: 10px;
+          }
+
+          &.loading {
+            [us-spinner] {
+              position: absolute;
+              top: 14px;
+              left: 10px;
+            }
+          }
+        }
+
+        .folder-name {
+          position: absolute;
+          left: 35px;
+          top: 0;
+
+          a {
+            white-space: nowrap;
+            padding: 0 10px;
+          }
+
+          &.highlighted {
+            a {
+              background-color: #fff !important;
+              color: #000 !important;
+              padding: 2px 10px;
+              border-right: 3px solid #fecf32;
+            }
+          }
+        }
+      }
+    }
+  }
+}

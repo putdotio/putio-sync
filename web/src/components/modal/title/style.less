@@ -1,0 +1,28 @@
+@import "../../../common/style";
+
+.modal-title {
+  position: relative;
+
+  h1 {
+    font-size: 16px;
+    width: 100%;
+    border-bottom: 2px solid @y1;
+    line-height: 30px;
+    display: block;
+    .lh-box-sizing(border-box);
+  }
+
+  i {
+    font-size: 24px;
+    line-height: 34px;
+    position: absolute;
+    right: 0;
+    top: 0;
+    color: @grayLighter;
+
+    &:hover {
+      color: @gray;
+      cursor: pointer;
+    }
+  }
+}

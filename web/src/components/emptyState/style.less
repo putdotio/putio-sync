@@ -1,0 +1,36 @@
+@import "../../common/style";
+
+.empty-state {
+  width: 100%;
+  min-height: 400px;
+  position: relative;
+
+  .empty-state-content {
+    width: 300px;
+    height: 200px;
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    margin-left: -150px;
+    margin-top: -140px;
+    text-align: center;
+
+    h1 {
+      font-size: 32px;
+      line-height: 40px;
+      color: lighten(@gray, 10%);
+    }
+
+    p {
+      margin-top: 20px;
+      line-height: 24px;
+      color: lighten(@gray, 20%);
+    }
+
+    .cta {
+      margin-top: 20px;
+      display: inline-block;
+      text-align: center;
+    }
+  }
+}

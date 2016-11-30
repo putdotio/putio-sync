@@ -1,0 +1,49 @@
+@import "../../common/style";
+
+.growl {
+  position: fixed;
+  top: 10px;
+  left: 50%;
+  margin-left: -200px;
+  width: 400px;
+  z-index: 999999;
+  padding: 10px;
+  .lh-border-radius(2px);
+  .lh-box-sizing(border-box);
+  display: none;
+
+  &.visible {
+    display: block;
+  }
+
+  i.cancel {
+    position: absolute;
+    right: 10px;
+    top: 10px;
+  }
+
+  &.default {
+    background: @grayLighter;
+    color: @grayLight;
+  }
+
+  &.error {
+    background: @red;
+    color: #fff;
+  }
+
+  &.success {
+    background: @green;
+    color: #fff;
+  }
+
+  &.info {
+    background: @blue;
+    color: #fff;
+  }
+
+  &.warning {
+    background: @yellow;
+    color: #fff;
+  }
+}

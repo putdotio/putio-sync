@@ -1,0 +1,29 @@
+@import "../common/style";
+
+#downloads-container {
+  .downloads {
+    .lh-box-sizing(border-box);
+
+    .download {
+      padding: 10px 30px;
+      border-bottom: 1px solid #eceef2;
+      .lh-box-sizing(border-box);
+      position: relative;
+
+      &:hover {
+        background: #f9f9f9;
+      }
+
+      .file-name {
+        font-size: 16px;
+        line-height: 28px;
+      }
+
+      .info-item {
+        font-size: 12px;
+        color: @gray;
+        margin-right: 10px;
+      }
+    }
+  }
+}

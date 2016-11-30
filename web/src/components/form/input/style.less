@@ -1,0 +1,29 @@
+@import "../../../common/style";
+
+.form-input {
+  position: relative;
+
+  input {
+    color: #000;
+    background: @input-bg;
+    .lh-border-radius(1px);
+    .lh-box-sizing(border-box);
+    border: 1px solid darken(@input-bg, 20%);
+    width: 100%;
+    height: 38px;
+    padding: 0;
+    text-indent: 10px;
+    font-size: 14px;
+
+    &:disabled {
+      color: darken(@input-bg, 20%);
+      border: 1px solid darken(@input-bg, 10%);
+    }
+  }
+
+  .input-action {
+    position: absolute;
+    right: 0;
+    top: 0;
+  }
+}

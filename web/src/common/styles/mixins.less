@@ -1,0 +1,14 @@
+@import "./_lesshat-prefixed";
+
+.no-flick() {
+  -webkit-transform-style: preserve-3d;
+  -webkit-perspective: 1000;
+  -webkit-backface-visibility: hidden;
+}
+
+.placeholder(@color: @grayLight) {
+  &:-moz-placeholder {color: @color;}
+  &::-webkit-input-placeholder {color: @color;}
+  &::-webkit-input-placeholder {color: @color;}
+  &:-ms-input-placeholder {color: @color;}
+}
