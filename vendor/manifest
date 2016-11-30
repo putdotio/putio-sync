@@ -1,0 +1,70 @@
+{
+	"version": 0,
+	"dependencies": [
+		{
+			"importpath": "github.com/boltdb/bolt",
+			"repository": "https://github.com/boltdb/bolt",
+			"revision": "3f7947a25d970e1e5f512276c14d5dcf731ccd5e",
+			"branch": "master"
+		},
+		{
+			"importpath": "github.com/cenk/backoff",
+			"repository": "https://github.com/cenk/backoff",
+			"revision": "a6030178a585d5972d4d33ce61f4a1fa40eaaed0",
+			"branch": "master"
+		},
+		{
+			"importpath": "github.com/cenk/bitfield",
+			"repository": "https://github.com/cenk/bitfield",
+			"revision": "a6292f4ee5dfa36441b1a3a3ce9803fe5183009c",
+			"branch": "master"
+		},
+		{
+			"importpath": "github.com/igungor/go-putio/putio",
+			"repository": "https://github.com/igungor/go-putio",
+			"revision": "7247a3d60c78b8cd97b4d90b4fe81a403b160284",
+			"branch": "master",
+			"path": "/putio"
+		},
+		{
+			"importpath": "github.com/rjeczalik/notify",
+			"repository": "https://github.com/rjeczalik/notify",
+			"revision": "48fbf980305bec9be7717fb46bb9bf2c5059c2e0",
+			"branch": "master"
+		},
+		{
+			"importpath": "golang.org/x/net/context",
+			"repository": "https://go.googlesource.com/net",
+			"revision": "e445b19913b9d40fdbdfe19ac5e3d314aafd6f63",
+			"branch": "master",
+			"path": "/context"
+		},
+		{
+			"importpath": "golang.org/x/oauth2",
+			"repository": "https://go.googlesource.com/oauth2",
+			"revision": "65a8d08c6292395d47053be10b3c5e91960def76",
+			"branch": "master"
+		},
+		{
+			"importpath": "golang.org/x/sync/errgroup",
+			"repository": "https://go.googlesource.com/sync",
+			"revision": "316e794f7b5e3df4e95175a45a5fb8b12f85cb4f",
+			"branch": "master",
+			"path": "/errgroup"
+		},
+		{
+			"importpath": "google.golang.org/cloud/compute/metadata",
+			"repository": "https://code.googlesource.com/gocloud",
+			"revision": "a4c7c3139dc2772ad6c3bb73d0a9236a79063f8c",
+			"branch": "master",
+			"path": "/compute/metadata"
+		},
+		{
+			"importpath": "google.golang.org/cloud/internal",
+			"repository": "https://code.googlesource.com/gocloud",
+			"revision": "a4c7c3139dc2772ad6c3bb73d0a9236a79063f8c",
+			"branch": "master",
+			"path": "/internal"
+		}
+	]
+}
