@@ -6,9 +6,12 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"os/exec"
 	"os/user"
 	"path/filepath"
+	"runtime"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -42,10 +45,11 @@ func NewHandler(s *sync.Client) *Handler {
 	h.mux.HandleFunc("/api/config", h.handleConfig)
 	h.mux.HandleFunc("/api/logout", h.handleLogout)
 	h.mux.HandleFunc("/api/clear", h.handleClear)
-	h.mux.HandleFunc("/api/add-magnet", h.handleAddMagnet)
-	h.mux.HandleFunc("/api/add-torrent", h.handleAddTorrent)
 	h.mux.HandleFunc("/api/tree", h.handleTree)
 	h.mux.HandleFunc("/api/ping", h.handlePing)
+	h.mux.HandleFunc("/api/go-to-file", h.handleGoToFile)
+	h.mux.HandleFunc("/api/add-magnet", h.handleAddMagnet)
+	h.mux.HandleFunc("/api/add-torrent", h.handleAddTorrent)
 
 	return h
 }
@@ -393,6 +397,51 @@ func (h *Handler) handlePing(w http.ResponseWriter, r *http.Request) {
 	}
 
 	return
+}
+
+func (h *Handler) handleGoToFile(w http.ResponseWriter, r *http.Request) {
+	h.Debugln("go-to-file called")
+
+	if r.Method != "GET" {
+		http.Error(w, "method now allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	fileID, err := strconv.ParseInt(r.FormValue("id"), 0, 64)
+	if err != nil {
+		h.Debugf("invalid file id: %v\n", err)
+		http.Error(w, "invalid file id", http.StatusBadRequest)
+		return
+	}
+
+	state, err := h.sync.Store.State(fileID)
+	if err == sync.ErrStateNotFound {
+		h.Debugf("fetching state failed for %v: %v\n", fileID, err)
+		http.Error(w, "file not found", http.StatusBadRequest)
+		return
+	}
+
+	if err != nil {
+		h.Debugf("fetching state failed for %v: %v\n", fileID, err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	var cmd string
+	switch runtime.GOOS {
+	case "darwin":
+		cmd = "open"
+	case "linux":
+		cmd = "xdg-open"
+	}
+
+	if cmd == "" {
+		h.Debugf("can't open file for this OS\n")
+		http.Error(w, "cant open file for this OS", http.StatusInternalServerError)
+		return
+	}
+
+	_ = exec.Command(cmd, state.LocalPath).Run()
 }
 
 func (h *Handler) handleTree(w http.ResponseWriter, r *http.Request) {
