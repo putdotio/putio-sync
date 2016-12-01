@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"os/user"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -48,7 +49,9 @@ type Client struct {
 
 	// Global cancellation function.
 	//
-	// CancelFunc is an indicator to the current state of the Client. If it is
+	// Calling CancelFunc stops all the running tasks.
+	//
+	// It is also an indicator to the current state of the Client. If it is
 	// nil, it means that client has stopped its poll/download cycle. Else, it
 	// actively polls for files and downloads them in the background if there
 	// are any new files exist.
@@ -70,14 +73,26 @@ type Client struct {
 	torrentsCh chan notify.EventInfo
 }
 
-func NewClient(cfgpath string, debug bool) (*Client, error) {
-	store := NewStore(cfgpath)
-	err := store.Open()
+func NewClient(debug bool) (*Client, error) {
+	u, err := user.Current()
 	if err != nil {
 		return nil, err
 	}
 
-	cfg, err := store.Config()
+	err = os.MkdirAll(filepath.Join(u.HomeDir, ".putio-sync/"), 0755)
+	if err != nil {
+		return nil, err
+	}
+
+	cfgpath := filepath.Join(u.HomeDir, ".putio-sync/putio-sync.db")
+	store := NewStore(cfgpath)
+
+	err = store.Open()
+	if err != nil {
+		return nil, err
+	}
+
+	cfg, err := store.Config("")
 	if err != nil {
 		return nil, err
 	}

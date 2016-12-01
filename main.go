@@ -5,8 +5,6 @@ import (
 	"log"
 	"os"
 	"os/signal"
-	"os/user"
-	"path/filepath"
 
 	"github.com/putdotio/putio-sync/http"
 	"github.com/putdotio/putio-sync/sync"
@@ -22,20 +20,9 @@ func main() {
 	)
 	flag.Parse()
 
-	u, err := user.Current()
+	sync, err := sync.NewClient(*debugFlag)
 	if err != nil {
-		log.Fatalln(err)
-	}
-
-	err = os.MkdirAll(filepath.Join(u.HomeDir, ".putio-sync/"), 0755)
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	cfgpath := filepath.Join(u.HomeDir, ".putio-sync/putio-sync.db")
-	sync, err := sync.NewClient(cfgpath, *debugFlag)
-	if err != nil {
-		log.Fatalln(err)
+		log.Fatalf("error creating new sync client: %v\n", err)
 	}
 
 	var server *http.Server
