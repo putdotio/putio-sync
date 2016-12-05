@@ -35,6 +35,9 @@ type Client struct {
 	// Putio API client
 	C *putio.Client
 
+	// Authenticated user
+	User *putio.AccountInfo
+
 	// Database handle
 	Store *Store
 
@@ -67,9 +70,6 @@ type Client struct {
 	doneCh chan struct{}
 
 	// Channel to listen to filesystem events for torrents folder
-	//
-	// Make the channel buffered to ensure no event is dropped. Notify will drop
-	// an event if the receiver is not able to keep up the sending pace.
 	torrentsCh chan notify.EventInfo
 }
 
@@ -107,38 +107,22 @@ func NewClient(debug bool) (*Client, error) {
 	client.UserAgent = defaultUserAgent
 
 	return &Client{
-		Logger:     NewLogger("sync: ", debug),
-		Debug:      debug,
-		Config:     cfg,
-		C:          client,
-		Store:      store,
-		Tasks:      NewTasks(),
-		taskCh:     make(chan *task),
+		Logger: NewLogger("sync: ", debug),
+		Debug:  debug,
+		Config: cfg,
+		C:      client,
+		User:   nil,
+		Store:  store,
+		Tasks:  NewTasks(),
+		taskCh: make(chan *task),
+		// Make the channel buffered to ensure no event is dropped.
+		// Notify will drop an event if the receiver is not able to
+		// keep up the sending pace.
 		torrentsCh: make(chan notify.EventInfo, 1),
 	}, nil
 }
 
-// RenewToken creates a new OAuth2 HTTP Client for the stored token. This
-// method is used for changing the oauth2 token of the Client without
-// restarting the application.
-func (c *Client) RenewToken() {
-	if c.Config.OAuth2Token == "" {
-		c.Println("Token is empty, ignoring...")
-		return
-	}
-
-	oauthClient := oauth2.NewClient(
-		oauth2.NoContext,
-		oauth2.StaticTokenSource(
-			&oauth2.Token{AccessToken: c.Config.OAuth2Token},
-		),
-	)
-
-	client := putio.NewClient(oauthClient)
-	client.UserAgent = defaultUserAgent
-	c.C = client
-}
-
+// Run starts watching the directory and consuming the download tasks.
 func (c *Client) Run() error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -147,17 +131,21 @@ func (c *Client) Run() error {
 		return Error("already running")
 	}
 
-	if c.Config.OAuth2Token == "" {
-		return Error("OAuth2 token not found")
-	}
-
 	if c.Config.DownloadFrom < 0 {
 		return Error("Invalid Put.io folder ID")
 	}
 
+	if c.Config.OAuth2Token == "" {
+		return Error("OAuth2 token not found")
+	}
+
+	if c.User == nil {
+		return Error("No authenticated user found")
+	}
+
 	if c.Config.IsPaused {
 		c.Config.IsPaused = false
-		c.Store.SaveConfig(c.Config)
+		c.Store.SaveConfig(c.Config, c.User.Username)
 	}
 
 	// assign the cancellation function to indicate that the client is already
@@ -187,7 +175,7 @@ func (c *Client) Stop() error {
 
 	if !c.Config.IsPaused {
 		c.Config.IsPaused = true
-		c.Store.SaveConfig(c.Config)
+		c.Store.SaveConfig(c.Config, c.User.Username)
 	}
 
 	// reset cancellation states for fresh start.
@@ -226,9 +214,40 @@ func (c *Client) Status() string {
 	return "syncing"
 }
 
+// RenewToken creates a new OAuth2 enabled HTTP client for the stored token.
+// This method is used for changing the OAuth2 token of the Client without
+// restarting the application.
+func (c *Client) RenewToken() error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if c.Config.OAuth2Token == "" {
+		c.Println("Token is empty, ignoring...")
+		return fmt.Errorf("OAuth2 token is empty")
+	}
+
+	oauthClient := oauth2.NewClient(
+		oauth2.NoContext,
+		oauth2.StaticTokenSource(
+			&oauth2.Token{AccessToken: c.Config.OAuth2Token},
+		),
+	)
+
+	client := putio.NewClient(oauthClient)
+	client.UserAgent = defaultUserAgent
+	c.C = client
+
+	user, err := c.C.Account.Info(nil)
+	if err != nil {
+		return err
+	}
+	c.User = &user
+
+	return nil
+}
+
 func (c *Client) queueTasks(ctx context.Context) {
 	const rootFolder = "/"
-
 	c.walk(ctx, c.Config.DownloadFrom, rootFolder)
 
 	for {
@@ -304,7 +323,7 @@ func (c *Client) consumeTasks(ctx context.Context, wg *sync.WaitGroup) {
 
 func (c *Client) processTask(ctx context.Context, t *task) {
 	// resume from previous download if possible.
-	state, err := c.Store.State(int64(t.f.ID))
+	state, err := c.Store.State(int64(t.f.ID), c.User.Username)
 	if err != nil && err != ErrStateNotFound {
 		c.Debugf("[processTask] Error retrieving state for file: %v. Err: %v\n", t.f.ID, err)
 		return
@@ -369,7 +388,7 @@ func (c *Client) download(ctx context.Context, t *task) error {
 	t.state.DownloadStatus = DownloadInProgress
 	t.state.BytesTransferredSinceLastUpdate = 0
 
-	err = c.Store.SaveState(t.state)
+	err = c.Store.SaveState(t.state, c.User.Username)
 	if err != nil {
 		return err
 	}
@@ -391,7 +410,7 @@ func (c *Client) download(ctx context.Context, t *task) error {
 			t.state.DownloadStatus = DownloadFailed
 			t.state.Error = err.Error()
 		}
-		_ = c.Store.SaveState(t.state)
+		_ = c.Store.SaveState(t.state, c.User.Username)
 		return err
 	}
 
@@ -400,7 +419,7 @@ func (c *Client) download(ctx context.Context, t *task) error {
 		c.Printf("verification failed for %v: %v\n", t, err)
 		t.state.DownloadStatus = DownloadFailed
 		t.state.Error = err.Error()
-		_ = c.Store.SaveState(t.state)
+		_ = c.Store.SaveState(t.state, c.User.Username)
 		return err
 	}
 
@@ -414,7 +433,7 @@ func (c *Client) download(ctx context.Context, t *task) error {
 	t.state.DownloadStatus = DownloadCompleted
 	t.state.DownloadFinishedAt = time.Now().UTC()
 	t.state.Error = ""
-	return c.Store.SaveState(t.state)
+	return c.Store.SaveState(t.state, c.User.Username)
 }
 
 func (c *Client) downloadRange(ctx context.Context, w io.WriterAt, t *task, ch *chunk) error {
@@ -472,7 +491,7 @@ func (c *Client) copyChunk(w io.WriterAt, body io.ReadCloser, ch *chunk, state *
 		state.Bitfield.Set(uint32(idx))
 		state.mu.Unlock()
 
-		err = c.Store.SaveState(state)
+		err = c.Store.SaveState(state, c.User.Username)
 		if err != nil {
 			return err
 		}

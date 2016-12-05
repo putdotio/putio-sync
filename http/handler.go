@@ -130,7 +130,7 @@ func (d ByDate) Less(i, j int) bool {
 }
 
 func (h *Handler) handleListDownloads(w http.ResponseWriter, r *http.Request) {
-	states, err := h.sync.Store.States()
+	states, err := h.sync.Store.States(h.sync.User.Username)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -185,6 +185,8 @@ func (h *Handler) handleConfig(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// New configuration POST'ed
+
 	var c sync.Config
 	err := json.NewDecoder(r.Body).Decode(&c)
 	if err != nil {
@@ -193,13 +195,10 @@ func (h *Handler) handleConfig(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// cant write configuration if there is no token
-	// configuration is associated with a valid and authenticated user.
-	// if there is no token, there is no user.
-
-	// Just write the user configuration. Internal fields must stay as is.
 	if c.OAuth2Token != "" {
 		h.sync.Config.OAuth2Token = c.OAuth2Token
+		// RenewToken is called here since a new OAuth2 token is inplace and a
+		// new client associated with this token must be created.
 		h.sync.RenewToken()
 	}
 
@@ -224,13 +223,10 @@ func (h *Handler) handleConfig(w http.ResponseWriter, r *http.Request) {
 	}
 	h.sync.Config.IsPaused = c.IsPaused
 
-	if r.Method == "GET" {
-		err := json.NewEncoder(w).Encode(h.sync.Config)
-		if err != nil {
-			h.Printf("Error encoding config: %v\n", err)
-			http.Error(w, "", http.StatusInternalServerError)
-			return
-		}
+	err = h.sync.Store.SaveConfig(h.sync.Config, h.sync.User.Username)
+	if err != nil {
+		h.Printf("Error saving config: %v\n", err)
+		http.Error(w, "", http.StatusInternalServerError)
 		return
 	}
 
@@ -255,7 +251,7 @@ func (h *Handler) handleLogout(w http.ResponseWriter, r *http.Request) {
 	_ = h.sync.Stop()
 	h.sync.Config.OAuth2Token = ""
 
-	err := h.sync.Store.SaveConfig(h.sync.Config)
+	err := h.sync.Store.SaveConfig(h.sync.Config, h.sync.User.Username)
 	if err != nil {
 		h.Printf("Error saving config: %v\n", err)
 		http.Error(w, "", http.StatusInternalServerError)
@@ -281,7 +277,7 @@ func (h *Handler) handleClear(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	states, err := h.sync.Store.States()
+	states, err := h.sync.Store.States(h.sync.User.Username)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -292,7 +288,7 @@ func (h *Handler) handleClear(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 		state.IsHidden = true
-		_ = h.sync.Store.SaveState(state)
+		_ = h.sync.Store.SaveState(state, h.sync.User.Username)
 	}
 
 	response := struct {
@@ -301,6 +297,10 @@ func (h *Handler) handleClear(w http.ResponseWriter, r *http.Request) {
 		Status: "ok",
 	}
 	err = json.NewEncoder(w).Encode(&response)
+	if err != nil {
+		h.Printf("Error encoding response: %v\n", err)
+		http.Error(w, "Error encoding response", http.StatusInternalServerError)
+	}
 	return
 }
 
@@ -428,7 +428,7 @@ func (h *Handler) handleGoToFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	state, err := h.sync.Store.State(fileID)
+	state, err := h.sync.Store.State(fileID, h.sync.User.Username)
 	if err == sync.ErrStateNotFound {
 		h.Debugf("fetching state failed for %v: %v\n", fileID, err)
 		http.Error(w, "file not found", http.StatusBadRequest)

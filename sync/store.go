@@ -9,15 +9,13 @@ import (
 	"time"
 
 	"github.com/boltdb/bolt"
-	"github.com/igungor/go-putio/putio"
 )
 
 // buckets
 var (
 	downloadItemsBucket   = []byte("download-items")
 	watchedTorrentsBucket = []byte("watched-torrents")
-	userAccountBucket     = []byte("user-account")
-	configBucket          = []byte("configuration")
+	defaultsBucket        = []byte("defaults")
 )
 
 type Error string
@@ -47,10 +45,7 @@ func (s *Store) Open() error {
 	s.db = db
 
 	err = s.db.Update(func(tx *bolt.Tx) error {
-		_, err = tx.CreateBucketIfNotExists(downloadItemsBucket)
-		_, err = tx.CreateBucketIfNotExists(watchedTorrentsBucket)
-		_, err = tx.CreateBucketIfNotExists(userAccountBucket)
-		_, err = tx.CreateBucketIfNotExists(configBucket)
+		_, err = tx.CreateBucketIfNotExists(defaultsBucket)
 		return err
 	})
 	if err != nil {
@@ -63,29 +58,55 @@ func (s *Store) Close() error { return s.db.Close() }
 
 func (s *Store) Path() string { return s.path }
 
-// SaveState inserts or updates the given state.
-func (s *Store) SaveState(state *State) error {
+func (s *Store) CreateBuckets(forUser string) error {
 	return s.db.Update(func(tx *bolt.Tx) error {
-		bucket := tx.Bucket(downloadItemsBucket)
-		key := itob(state.FileID)
+		userBkt, err := tx.CreateBucketIfNotExists([]byte(forUser))
+		if err != nil {
+			return err
+		}
 
+		buckets := [][]byte{
+			downloadItemsBucket,
+			watchedTorrentsBucket,
+		}
+
+		for _, bucket := range buckets {
+			_, err = userBkt.CreateBucketIfNotExists(bucket)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+}
+
+// SaveState inserts or updates the given state.
+func (s *Store) SaveState(state *State, forUser string) error {
+	return s.db.Update(func(tx *bolt.Tx) error {
+		userBkt := tx.Bucket([]byte(forUser))
+		downloadsBkt := userBkt.Bucket(downloadItemsBucket)
+
+		key := itob(state.FileID)
 		var value bytes.Buffer
+
 		err := gob.NewEncoder(&value).Encode(state)
 		if err != nil {
 			return err
 		}
 
-		return bucket.Put(key, value.Bytes())
+		return downloadsBkt.Put(key, value.Bytes())
 	})
 }
 
 // State returns a state by the given file ID.
-func (s *Store) State(id int64) (*State, error) {
+func (s *Store) State(id int64, forUser string) (*State, error) {
 	var state State
 	err := s.db.View(func(tx *bolt.Tx) error {
-		fileid := itob(id)
+		userBkt := tx.Bucket([]byte(forUser))
+		downloadsBkt := userBkt.Bucket(downloadItemsBucket)
+		fileID := itob(id)
 
-		value := tx.Bucket(downloadItemsBucket).Get(fileid)
+		value := downloadsBkt.Get(fileID)
 		if value == nil {
 			return ErrStateNotFound
 		}
@@ -96,11 +117,18 @@ func (s *Store) State(id int64) (*State, error) {
 }
 
 // States returns all the states in the store.
-func (s *Store) States() ([]*State, error) {
+func (s *Store) States(forUser string) ([]*State, error) {
 	states := make([]*State, 0)
-	err := s.db.View(func(tx *bolt.Tx) error {
-		cursor := tx.Bucket(downloadItemsBucket).Cursor()
 
+	if forUser == "" {
+		return states, nil
+	}
+
+	err := s.db.View(func(tx *bolt.Tx) error {
+		userBkt := tx.Bucket([]byte(forUser))
+		downloadsBkt := userBkt.Bucket(downloadItemsBucket)
+
+		cursor := downloadsBkt.Cursor()
 		for k, v := cursor.First(); k != nil; k, v = cursor.Next() {
 			var state State
 			err := gob.NewDecoder(bytes.NewReader(v)).Decode(&state)
@@ -120,10 +148,17 @@ func (s *Store) States() ([]*State, error) {
 }
 
 // StateN returns the number of states in the store.
-func (s *Store) StateN() (int, error) {
+func (s *Store) StateN(forUser string) (int, error) {
+	if forUser == "" {
+		return 0, nil
+	}
+
 	var n int
 	err := s.db.View(func(tx *bolt.Tx) error {
-		cursor := tx.Bucket(downloadItemsBucket).Cursor()
+		userBkt := tx.Bucket([]byte(forUser))
+		downloadsBkt := userBkt.Bucket(downloadItemsBucket)
+
+		cursor := downloadsBkt.Cursor()
 		for k, _ := cursor.First(); k != nil; k, _ = cursor.Next() {
 			n++
 		}
@@ -132,54 +167,36 @@ func (s *Store) StateN() (int, error) {
 	return n, err
 }
 
-func (s *Store) SaveUserAccount(info putio.AccountInfo) error {
-	return s.db.Update(func(tx *bolt.Tx) error {
-		bucket := tx.Bucket(userAccountBucket)
-		key := []byte(info.Username)
-		var value bytes.Buffer
+func (s *Store) Config(forUser string) (*Config, error) {
+	if forUser == "" {
+		return s.DefaultConfig()
+	}
 
-		err := gob.NewEncoder(&value).Encode(info)
-		if err != nil {
-			return err
-		}
-
-		return bucket.Put(key, value.Bytes())
-	})
-}
-
-func (s *Store) Config() (*Config, error) {
-	var cfg Config
+	var cfg *Config
 	err := s.db.View(func(tx *bolt.Tx) error {
-		key := []byte("config")
-		value := tx.Bucket(configBucket).Get(key)
-		if value == nil {
-			u, err := user.Current()
-			if err != nil {
-				return err
-			}
+		userBkt := tx.Bucket([]byte(forUser))
 
-			cfg = Config{
-				PollInterval:        Duration(defaultPollInterval),
-				DownloadTo:          filepath.Join(u.HomeDir, "putio-sync"),
-				DownloadFrom:        defaultDownloadFrom,
-				SegmentsPerFile:     defaultSegmentsPerFile,
-				MaxParallelFiles:    defaultMaxParallelFiles,
-				WatchTorrentsFolder: false,
-				TorrentsFolder:      "",
-				IsPaused:            true,
-			}
-			return nil
+		key := []byte("config")
+		value := userBkt.Get(key)
+
+		if value == nil {
+			return ErrConfigNotFound
 		}
 
-		return gob.NewDecoder(bytes.NewReader(value)).Decode(&cfg)
+		return gob.NewDecoder(bytes.NewReader(value)).Decode(cfg)
 	})
 
-	return &cfg, err
+	if err == ErrConfigNotFound {
+		cfg, err = s.DefaultConfig()
+	}
+
+	return cfg, err
 }
 
-func (s *Store) SaveConfig(cfg *Config) error {
+func (s *Store) SaveConfig(cfg *Config, forUser string) error {
 	return s.db.Update(func(tx *bolt.Tx) error {
-		bucket := tx.Bucket(configBucket)
+		userBkt := tx.Bucket([]byte(forUser))
+
 		key := []byte("config")
 		var value bytes.Buffer
 
@@ -188,7 +205,49 @@ func (s *Store) SaveConfig(cfg *Config) error {
 			return err
 		}
 
-		return bucket.Put(key, value.Bytes())
+		return userBkt.Put(key, value.Bytes())
+	})
+}
+
+func (s *Store) DefaultConfig() (*Config, error) {
+	u, err := user.Current()
+	if err != nil {
+		return nil, err
+	}
+	return &Config{
+		PollInterval:        Duration(defaultPollInterval),
+		DownloadTo:          filepath.Join(u.HomeDir, "putio-sync"),
+		DownloadFrom:        defaultDownloadFrom,
+		SegmentsPerFile:     defaultSegmentsPerFile,
+		MaxParallelFiles:    defaultMaxParallelFiles,
+		IsPaused:            true,
+		WatchTorrentsFolder: false,
+		TorrentsFolder:      "",
+	}, nil
+}
+
+func (s *Store) CurrentUser() (string, error) {
+	var username []byte
+	err := s.db.View(func(tx *bolt.Tx) error {
+		bkt := tx.Bucket(defaultsBucket)
+		username = bkt.Get([]byte("current-user"))
+		return nil
+	})
+	if err != nil {
+		return "", err
+	}
+
+	if username == nil {
+		return "", nil
+	}
+	return string(username), nil
+}
+
+func (s *Store) SaveCurrentUser(username string) error {
+	return s.db.Update(func(tx *bolt.Tx) error {
+		bkt := tx.Bucket(defaultsBucket)
+		key := []byte("current-user")
+		return bkt.Put(key, []byte(username))
 	})
 }
 
