@@ -171,57 +171,58 @@ func (h *Handler) handleListDownloads(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) handleConfig(w http.ResponseWriter, r *http.Request) {
-	if r.Method == "POST" {
-		var c sync.Config
-		err := json.NewDecoder(r.Body).Decode(&c)
-		if err != nil {
-			h.Printf("Error decoding config: %v\n", err)
-			http.Error(w, "", http.StatusInternalServerError)
-			return
-		}
-
-		// Just write the user configuration. Internal fields must stay as is.
-		if c.OAuth2Token != "" {
-			h.sync.Config.OAuth2Token = c.OAuth2Token
-			h.sync.RenewToken()
-		}
-
-		if c.PollInterval >= sync.Duration(time.Minute) {
-			h.sync.Config.PollInterval = c.PollInterval
-		}
-
-		if c.DownloadTo != "" {
-			h.sync.Config.DownloadTo = c.DownloadTo
-		}
-
-		if c.DownloadFrom >= 0 {
-			h.sync.Config.DownloadFrom = c.DownloadFrom
-		}
-
-		if c.SegmentsPerFile > 0 {
-			h.sync.Config.SegmentsPerFile = c.SegmentsPerFile
-		}
-
-		if c.MaxParallelFiles > 0 {
-			h.sync.Config.MaxParallelFiles = c.MaxParallelFiles
-		}
-		h.sync.Config.IsPaused = c.IsPaused
-
-		err = h.sync.Store.SaveConfig(h.sync.Config)
-		if err != nil {
-			h.Printf("Error saving config: %v\n", err)
-			http.Error(w, "", http.StatusInternalServerError)
-			return
-		}
-
-		response := struct {
-			Status string `json:"status"`
-		}{
-			Status: "ok",
-		}
-		err = json.NewEncoder(w).Encode(&response)
+	if r.Method != "GET" || r.Method != "POST" {
+		http.Error(w, "", http.StatusMethodNotAllowed)
 		return
 	}
+
+	if r.Method == "GET" {
+		err := json.NewEncoder(w).Encode(h.sync.Config)
+		if err != nil {
+			h.Printf("Error encoding config: %v\n", err)
+			http.Error(w, "", http.StatusInternalServerError)
+			return
+		}
+	}
+
+	var c sync.Config
+	err := json.NewDecoder(r.Body).Decode(&c)
+	if err != nil {
+		h.Printf("Error decoding config: %v\n", err)
+		http.Error(w, "", http.StatusInternalServerError)
+		return
+	}
+
+	// cant write configuration if there is no token
+	// configuration is associated with a valid and authenticated user.
+	// if there is no token, there is no user.
+
+	// Just write the user configuration. Internal fields must stay as is.
+	if c.OAuth2Token != "" {
+		h.sync.Config.OAuth2Token = c.OAuth2Token
+		h.sync.RenewToken()
+	}
+
+	if c.PollInterval >= sync.Duration(time.Minute) {
+		h.sync.Config.PollInterval = c.PollInterval
+	}
+
+	if c.DownloadTo != "" {
+		h.sync.Config.DownloadTo = c.DownloadTo
+	}
+
+	if c.DownloadFrom >= 0 {
+		h.sync.Config.DownloadFrom = c.DownloadFrom
+	}
+
+	if c.SegmentsPerFile > 0 {
+		h.sync.Config.SegmentsPerFile = c.SegmentsPerFile
+	}
+
+	if c.MaxParallelFiles > 0 {
+		h.sync.Config.MaxParallelFiles = c.MaxParallelFiles
+	}
+	h.sync.Config.IsPaused = c.IsPaused
 
 	if r.Method == "GET" {
 		err := json.NewEncoder(w).Encode(h.sync.Config)
@@ -233,7 +234,16 @@ func (h *Handler) handleConfig(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Error(w, "", http.StatusMethodNotAllowed)
+	response := struct {
+		Status string `json:"status"`
+	}{
+		Status: "ok",
+	}
+	err = json.NewEncoder(w).Encode(&response)
+	if err != nil {
+		h.Printf("Error encoding response: %v\n", err)
+		http.Error(w, "", http.StatusInternalServerError)
+	}
 }
 
 func (h *Handler) handleLogout(w http.ResponseWriter, r *http.Request) {
@@ -258,6 +268,10 @@ func (h *Handler) handleLogout(w http.ResponseWriter, r *http.Request) {
 		Status: "ok",
 	}
 	err = json.NewEncoder(w).Encode(&response)
+	if err != nil {
+		h.Printf("Error encoding response: %v\n", err)
+		http.Error(w, "", http.StatusInternalServerError)
+	}
 	return
 }
 
@@ -470,15 +484,16 @@ func (h *Handler) handleTree(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var folders []folder
-
 	for _, f := range files {
-		if f.Mode().IsDir() {
-			folders = append(folders, folder{
-				Name:   f.Name(),
-				Path:   filepath.Join(parent, f.Name()),
-				Parent: parent,
-			})
+		if !f.Mode().IsDir() {
+			continue
 		}
+
+		folders = append(folders, folder{
+			Name:   f.Name(),
+			Path:   filepath.Join(parent, f.Name()),
+			Parent: parent,
+		})
 	}
 
 	var response = struct {
