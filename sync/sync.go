@@ -344,15 +344,15 @@ func (c *Client) consumeTasks(ctx context.Context, wg *sync.WaitGroup) {
 
 func (c *Client) processTask(ctx context.Context, t *task) {
 	// resume from previous download if possible.
-	state, err := c.Store.State(int64(t.f.ID), c.User.Username)
+	state, err := c.Store.State(int64(t.state.FileID), c.User.Username)
 	if err != nil && err != ErrStateNotFound {
-		c.Debugf("[processTask] Error retrieving state for file: %v. Err: %v\n", t.f.ID, err)
+		c.Debugf("[processTask] Error retrieving state for file: %v. Err: %v\n", t.state.FileID, err)
 		return
 	}
 
 	// new download
 	if err == ErrStateNotFound {
-		c.Debugf("processTask] state not found for file: %v, creating a new one\n", t.f.Name)
+		c.Debugf("processTask] state not found for file: %v, creating a new one\n", t.state.FileName)
 		savedTo := filepath.Join(c.Config.DownloadTo, t.cwd)
 		state = NewState(t.f, savedTo)
 	}
@@ -386,7 +386,7 @@ func (c *Client) download(ctx context.Context, t *task) error {
 	taskdir := filepath.Join(filepath.Clean(c.Config.DownloadTo), t.cwd)
 	// absolute path of the file, with an extension added, indicating that the
 	// file is not completed yet.
-	taskpath := filepath.Join(taskdir, t.f.Name)
+	taskpath := filepath.Join(taskdir, t.state.FileName)
 	taskpath += inProgressExtension
 
 	_, err := os.Stat(taskdir)
@@ -472,11 +472,11 @@ func (c *Client) doRequest(ctx context.Context, t *task, ch *chunk) (io.ReadClos
 	// 0 byte files cannot be retrieved with a range request. Servers will
 	// return "416 - Requested Range Not Satisfiable".
 	// Set the boundry only if the file has content.
-	if t.f.Size != 0 {
+	if t.state.FileLength != 0 {
 		rangeHeader.Set("Range", fmt.Sprintf("bytes=%v-%v", ch.offset, ch.offset+ch.length-1))
 	}
 
-	return c.C.Files.Download(ctx, t.f.ID, false, rangeHeader)
+	return c.C.Files.Download(ctx, t.state.FileID, false, rangeHeader)
 }
 
 func (c *Client) copyChunk(w io.WriterAt, body io.ReadCloser, ch *chunk, state *State) error {
