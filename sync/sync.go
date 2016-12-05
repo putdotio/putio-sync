@@ -243,7 +243,12 @@ func (c *Client) RenewToken() error {
 	}
 	c.User = &user
 
-	return nil
+	err = c.Store.SaveCurrentUser(user.Username)
+	if err != nil {
+		return err
+	}
+
+	return c.Store.CreateBuckets(c.User.Username)
 }
 
 // DeleteToken deletes the token associated with the Client.

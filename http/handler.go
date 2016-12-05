@@ -199,7 +199,12 @@ func (h *Handler) handleConfig(w http.ResponseWriter, r *http.Request) {
 		h.sync.Config.OAuth2Token = c.OAuth2Token
 		// RenewToken is called here since a new OAuth2 token is inplace and a
 		// new client associated with this token must be created.
-		h.sync.RenewToken()
+		err := h.sync.RenewToken()
+		if err != nil {
+			h.Printf("Error renewing token: %v\n", err)
+			http.Error(w, "", http.StatusInternalServerError)
+			return
+		}
 	}
 
 	if c.PollInterval >= sync.Duration(time.Minute) {
