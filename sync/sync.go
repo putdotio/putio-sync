@@ -246,6 +246,22 @@ func (c *Client) RenewToken() error {
 	return nil
 }
 
+// DeleteToken deletes the token associated with the Client.
+func (c *Client) DeleteToken() error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	c.Config.OAuth2Token = ""
+	err := c.Store.SaveConfig(c.Config, c.User.Username)
+	if err != nil {
+		return err
+	}
+
+	c.User = nil
+
+	return c.Store.SaveCurrentUser("")
+}
+
 func (c *Client) queueTasks(ctx context.Context) {
 	const rootFolder = "/"
 	c.walk(ctx, c.Config.DownloadFrom, rootFolder)

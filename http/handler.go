@@ -171,18 +171,18 @@ func (h *Handler) handleListDownloads(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) handleConfig(w http.ResponseWriter, r *http.Request) {
-	if r.Method != "GET" || r.Method != "POST" {
-		http.Error(w, "", http.StatusMethodNotAllowed)
-		return
-	}
-
 	if r.Method == "GET" {
 		err := json.NewEncoder(w).Encode(h.sync.Config)
 		if err != nil {
 			h.Printf("Error encoding config: %v\n", err)
 			http.Error(w, "", http.StatusInternalServerError)
-			return
 		}
+		return
+	}
+
+	if r.Method != "POST" {
+		http.Error(w, "", http.StatusMethodNotAllowed)
+		return
 	}
 
 	// New configuration POST'ed
@@ -249,21 +249,14 @@ func (h *Handler) handleLogout(w http.ResponseWriter, r *http.Request) {
 	}
 
 	_ = h.sync.Stop()
-	h.sync.Config.OAuth2Token = ""
-
-	err := h.sync.Store.SaveConfig(h.sync.Config, h.sync.User.Username)
-	if err != nil {
-		h.Printf("Error saving config: %v\n", err)
-		http.Error(w, "", http.StatusInternalServerError)
-		return
-	}
+	_ = h.sync.DeleteToken()
 
 	response := struct {
 		Status string `json:"status"`
 	}{
 		Status: "ok",
 	}
-	err = json.NewEncoder(w).Encode(&response)
+	err := json.NewEncoder(w).Encode(&response)
 	if err != nil {
 		h.Printf("Error encoding response: %v\n", err)
 		http.Error(w, "", http.StatusInternalServerError)
