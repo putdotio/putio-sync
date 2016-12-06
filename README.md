@@ -4,6 +4,8 @@ putio-sync is a command line program to download your preferred Put.io directory
 
 It periodically watches for changes and downloads new content when they arrive.
 
+![](https://s3-eu-west-1.amazonaws.com/putio-mac-app/putio-sync-ss.png)
+
 ## features
 
 * Synchronize upstream folder to make upstream directory hiearchy identical
