@@ -9,7 +9,7 @@ It periodically watches for changes and downloads new content when they arrive.
 ## Features
 
 * Cross platform
-* Synchronize upstream folder to make upstream directory hiearchy identical
+* Synchronizes upstream folder to make directory hiearchy identical
 * Checks for file hash equality
 * Pause/resume support
 * HTTP API for external clients
