@@ -1,6 +1,15 @@
 # putio-sync
 
-putio-sync watches the specified Put.io folder and downloads to you computer.
+putio-sync is a command line program to download your preferred Put.io directory to your computer.
+
+It periodically watches for changes and downloads new content when they arrive.
+
+## features
+
+* Synchronize upstream folder to make upstream directory hiearchy identical
+* Checks for file hash equality
+* Pause/resume support
+* HTTP API for external clients
 
 # installation
 
