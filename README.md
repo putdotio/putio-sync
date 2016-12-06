@@ -1,28 +1,32 @@
 # putio-sync
 
-putio-sync is a command line program to download your preferred Put.io directory to your computer.
+putio-sync is a cross-platform command line program to download your preferred Put.io directory to your computer.
 
 It periodically watches for changes and downloads new content when they arrive.
 
 ![](https://s3-eu-west-1.amazonaws.com/putio-mac-app/putio-sync-ss.png)
 
-## features
+## Features
 
+* Cross platform
 * Synchronize upstream folder to make upstream directory hiearchy identical
 * Checks for file hash equality
 * Pause/resume support
 * HTTP API for external clients
 * Web UI
 
-# installation
+# Installation
 
 ```sh
 go get github.com/putdotio/putio-sync
 ```
 
-# usage
+# Usage
 
-run `putio-sync -server` and visit `http://127.0.0.1:3000`
+Run `putio-sync -server` and visit `http://127.0.0.1:3000`
+
+There is also a [macOS app](https://s3-eu-west-1.amazonaws.com/putio-mac-app/Putio.dmg) to start
+the server.
 
 # license
 
