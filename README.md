@@ -10,6 +10,7 @@ It periodically watches for changes and downloads new content when they arrive.
 * Checks for file hash equality
 * Pause/resume support
 * HTTP API for external clients
+* Web UI
 
 # installation
 
