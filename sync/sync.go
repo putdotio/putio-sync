@@ -27,6 +27,7 @@ type Client struct {
 	// Logging facility
 	*Logger
 
+	// Debug flag for logger verbosity
 	Debug bool
 
 	// Configuration
