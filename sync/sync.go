@@ -404,7 +404,8 @@ func (c *Client) download(ctx context.Context, t *task) error {
 	}
 	defer f.Close()
 
-	_ = f.Truncate(t.state.FileLength)
+	// pre-allocate file space
+	_ = fallocate(f, t.state.FileLength)
 
 	t.state.DownloadStartedAt = time.Now()
 	t.state.DownloadStatus = DownloadInProgress
