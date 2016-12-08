@@ -6,14 +6,15 @@ build-web:
 	@go build -o putio-sync-cli
 
 build-all:
-	@GOOS=linux GOARCH=386 go build -o putio-sync.linux-386
-	@GOOS=linux GOARCH=amd64 go build -o putio-sync.linux-amd64
-	@GOOS=linux GOARCH=arm go build -o putio-sync.linux-arm
-	@GOOS=darwin GOARCH=amd64 go build -o putio-sync.darwin-amd64
-	@GOOS=windows GOARCH=386 go build -o putio-sync.windows-386
-	@GOOS=windows GOARCH=amd64 go build -o putio-sync.windows-amd64
+	@mkdir build/
+	@GOOS=linux GOARCH=386 go build -o build/putio-sync.linux-386
+	@GOOS=linux GOARCH=amd64 go build -o build/putio-sync.linux-amd64
+	@GOOS=linux GOARCH=arm go build -o build/putio-sync.linux-arm
+	@GOOS=darwin GOARCH=amd64 go build -o build/putio-sync.darwin-amd64
+	@GOOS=windows GOARCH=386 go build -o build/putio-sync.windows-386
+	@GOOS=windows GOARCH=amd64 go build -o build/putio-sync.windows-amd64
 
 clean:
-	@rm putio-sync-cli
+	@rm -rf build/
 
 .PHONY: all build clean
