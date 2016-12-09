@@ -17,8 +17,12 @@ It periodically watches for changes and downloads new content when they arrive.
 
 # Installation
 
+Check out the [release page](https://github.com/putdotio/putio-sync/releases) for binaries.
+
+If you have Go installed, try checking out the latest release:
+
 ```sh
-go get github.com/putdotio/putio-sync
+go get -u github.com/putdotio/putio-sync
 ```
 
 # Usage
