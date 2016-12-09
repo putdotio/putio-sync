@@ -3,7 +3,6 @@ all:
 build-web:
 	@cd web;./node_modules/gulp/bin/gulp.js;cd ..
 	@esc -o http/static.go -pkg http -prefix web/build web/build
-	@go build -o putio-sync-cli
 
 build-all:
 	@mkdir build/
