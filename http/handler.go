@@ -19,9 +19,6 @@ import (
 )
 
 type Handler struct {
-	// custom logger
-	*sync.Logger
-
 	// synchronization client which is used to start/stop downloading
 	sync *sync.Client
 
@@ -34,7 +31,6 @@ type Handler struct {
 
 func NewHandler(s *sync.Client) *Handler {
 	h := &Handler{
-		Logger:   sync.NewLogger("http: ", s.Debug),
 		sync:     s,
 		mux:      http.NewServeMux(),
 		staticFS: FS(false),
@@ -73,11 +69,11 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) handleStart(w http.ResponseWriter, r *http.Request) {
-	h.Debugln("start called")
+	h.sync.Debugf("start called\n")
 
 	err := h.sync.Run()
 	if err != nil {
-		h.Println(err)
+		h.sync.Println(err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -89,14 +85,14 @@ func (h *Handler) handleStart(w http.ResponseWriter, r *http.Request) {
 	}
 	err = json.NewEncoder(w).Encode(&response)
 	if err != nil {
-		h.Printf("Error encoding response: %v\n", err)
+		h.sync.Printf("Error encoding response: %v\n", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 	return
 }
 
 func (h *Handler) handleStop(w http.ResponseWriter, r *http.Request) {
-	h.Debugln("stop called")
+	h.sync.Debugf("stop called\n")
 
 	err := h.sync.Stop()
 	if err != nil {
@@ -111,7 +107,7 @@ func (h *Handler) handleStop(w http.ResponseWriter, r *http.Request) {
 	}
 	err = json.NewEncoder(w).Encode(&response)
 	if err != nil {
-		h.Printf("Error encoding response: %v\n", err)
+		h.sync.Printf("Error encoding response: %v\n", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 	return
@@ -163,7 +159,7 @@ func (h *Handler) handleListDownloads(w http.ResponseWriter, r *http.Request) {
 	}
 	err = json.NewEncoder(w).Encode(&listResponse)
 	if err != nil {
-		h.Printf("Error encoding response: %v\n", err)
+		h.sync.Printf("Error encoding response: %v\n", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -174,7 +170,7 @@ func (h *Handler) handleConfig(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {
 		err := json.NewEncoder(w).Encode(h.sync.Config)
 		if err != nil {
-			h.Printf("Error encoding config: %v\n", err)
+			h.sync.Printf("Error encoding config: %v\n", err)
 			http.Error(w, "", http.StatusInternalServerError)
 		}
 		return
@@ -190,7 +186,7 @@ func (h *Handler) handleConfig(w http.ResponseWriter, r *http.Request) {
 	var c sync.Config
 	err := json.NewDecoder(r.Body).Decode(&c)
 	if err != nil {
-		h.Printf("Error decoding config: %v\n", err)
+		h.sync.Printf("Error decoding config: %v\n", err)
 		http.Error(w, "", http.StatusInternalServerError)
 		return
 	}
@@ -201,7 +197,7 @@ func (h *Handler) handleConfig(w http.ResponseWriter, r *http.Request) {
 		// new client associated with this token must be created.
 		err := h.sync.RenewToken()
 		if err != nil {
-			h.Printf("Error renewing token: %v\n", err)
+			h.sync.Printf("Error renewing token: %v\n", err)
 			http.Error(w, "", http.StatusInternalServerError)
 			return
 		}
@@ -230,7 +226,7 @@ func (h *Handler) handleConfig(w http.ResponseWriter, r *http.Request) {
 
 	err = h.sync.Store.SaveConfig(h.sync.Config, h.sync.User.Username)
 	if err != nil {
-		h.Printf("Error saving config: %v\n", err)
+		h.sync.Printf("Error saving config: %v\n", err)
 		http.Error(w, "", http.StatusInternalServerError)
 		return
 	}
@@ -242,7 +238,7 @@ func (h *Handler) handleConfig(w http.ResponseWriter, r *http.Request) {
 	}
 	err = json.NewEncoder(w).Encode(&response)
 	if err != nil {
-		h.Printf("Error encoding response: %v\n", err)
+		h.sync.Printf("Error encoding response: %v\n", err)
 		http.Error(w, "", http.StatusInternalServerError)
 	}
 }
@@ -263,7 +259,7 @@ func (h *Handler) handleLogout(w http.ResponseWriter, r *http.Request) {
 	}
 	err := json.NewEncoder(w).Encode(&response)
 	if err != nil {
-		h.Printf("Error encoding response: %v\n", err)
+		h.sync.Printf("Error encoding response: %v\n", err)
 		http.Error(w, "", http.StatusInternalServerError)
 	}
 	return
@@ -296,14 +292,14 @@ func (h *Handler) handleClear(w http.ResponseWriter, r *http.Request) {
 	}
 	err = json.NewEncoder(w).Encode(&response)
 	if err != nil {
-		h.Printf("Error encoding response: %v\n", err)
+		h.sync.Printf("Error encoding response: %v\n", err)
 		http.Error(w, "Error encoding response", http.StatusInternalServerError)
 	}
 	return
 }
 
 func (h *Handler) handleAddMagnet(w http.ResponseWriter, r *http.Request) {
-	h.Debugln("add-magnet called")
+	h.sync.Debugf("add-magnet called\n")
 
 	if r.Method != "POST" {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
@@ -318,21 +314,21 @@ func (h *Handler) handleAddMagnet(w http.ResponseWriter, r *http.Request) {
 
 	magnetURI, err := base64.URLEncoding.DecodeString(uri)
 	if err != nil {
-		h.Printf("Error decoding url: %v\n", err)
+		h.sync.Printf("Error decoding url: %v\n", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	transfer, err := h.sync.C.Transfers.Add(nil, string(magnetURI), h.sync.Config.DownloadFrom, "")
 	if err != nil {
-		h.Printf("Error adding a new transfer: %v\n", err)
+		h.sync.Printf("Error adding a new transfer: %v\n", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	err = json.NewEncoder(w).Encode(&transfer)
 	if err != nil {
-		h.Printf("Error encoding response: %v\n", err)
+		h.sync.Printf("Error encoding response: %v\n", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 
@@ -340,7 +336,7 @@ func (h *Handler) handleAddMagnet(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) handleAddTorrent(w http.ResponseWriter, r *http.Request) {
-	h.Debugln("add-magnet called")
+	h.sync.Debugf("add-magnet called\n")
 
 	if r.Method != "POST" {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
@@ -355,7 +351,7 @@ func (h *Handler) handleAddTorrent(w http.ResponseWriter, r *http.Request) {
 
 	b, err := base64.URLEncoding.DecodeString(torrentPath)
 	if err != nil {
-		h.Printf("Error decoding path: %v\n", err)
+		h.sync.Printf("Error decoding path: %v\n", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -369,7 +365,7 @@ func (h *Handler) handleAddTorrent(w http.ResponseWriter, r *http.Request) {
 
 	f, err := os.Open(torrentPath)
 	if err != nil {
-		h.Printf("Error opening file: %v\n", err)
+		h.sync.Printf("Error opening file: %v\n", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -378,14 +374,14 @@ func (h *Handler) handleAddTorrent(w http.ResponseWriter, r *http.Request) {
 	_, filename := filepath.Split(torrentPath)
 	upload, err := h.sync.C.Files.Upload(nil, f, filename, h.sync.Config.DownloadFrom)
 	if err != nil {
-		h.Printf("Error uploading file: %v\n", err)
+		h.sync.Printf("Error uploading file: %v\n", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	err = json.NewEncoder(w).Encode(upload.Transfer)
 	if err != nil {
-		h.Printf("Error encoding response: %v\n", err)
+		h.sync.Printf("Error encoding response: %v\n", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -394,7 +390,7 @@ func (h *Handler) handleAddTorrent(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) handlePing(w http.ResponseWriter, r *http.Request) {
-	h.Debugln("ping called")
+	h.sync.Debugf("ping called\n")
 
 	if r.Method != "GET" {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
@@ -403,7 +399,7 @@ func (h *Handler) handlePing(w http.ResponseWriter, r *http.Request) {
 
 	_, err := h.sync.C.Account.Info(nil)
 	if err != nil {
-		h.Printf("Error fetching account info: %v\n", err)
+		h.sync.Printf("Error fetching account info: %v\n", err)
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
 	}
@@ -412,7 +408,7 @@ func (h *Handler) handlePing(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) handleGoToFile(w http.ResponseWriter, r *http.Request) {
-	h.Debugln("go-to-file called")
+	h.sync.Debugf("go-to-file called\n")
 
 	if r.Method != "GET" {
 		http.Error(w, "method now allowed", http.StatusMethodNotAllowed)
@@ -421,20 +417,20 @@ func (h *Handler) handleGoToFile(w http.ResponseWriter, r *http.Request) {
 
 	fileID, err := strconv.ParseInt(r.FormValue("id"), 0, 64)
 	if err != nil {
-		h.Debugf("invalid file id: %v\n", err)
+		h.sync.Debugf("invalid file id: %v\n", err)
 		http.Error(w, "invalid file id", http.StatusBadRequest)
 		return
 	}
 
 	state, err := h.sync.Store.State(fileID, h.sync.User.Username)
 	if err == sync.ErrStateNotFound {
-		h.Debugf("fetching state failed for %v: %v\n", fileID, err)
+		h.sync.Debugf("fetching state failed for %v: %v\n", fileID, err)
 		http.Error(w, "file not found", http.StatusBadRequest)
 		return
 	}
 
 	if err != nil {
-		h.Debugf("fetching state failed for %v: %v\n", fileID, err)
+		h.sync.Debugf("fetching state failed for %v: %v\n", fileID, err)
 		http.Error(w, "internal server error", http.StatusInternalServerError)
 		return
 	}
@@ -448,7 +444,7 @@ func (h *Handler) handleGoToFile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if cmd == "" {
-		h.Debugf("can't open file for this OS\n")
+		h.sync.Debugf("can't open file for this OS\n")
 		http.Error(w, "cant open file for this OS", http.StatusInternalServerError)
 		return
 	}
@@ -461,7 +457,7 @@ func (h *Handler) handleTree(w http.ResponseWriter, r *http.Request) {
 	if parent == "" {
 		u, err := user.Current()
 		if err != nil {
-			h.Println(err)
+			h.sync.Println(err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -470,7 +466,7 @@ func (h *Handler) handleTree(w http.ResponseWriter, r *http.Request) {
 
 	files, err := ioutil.ReadDir(parent)
 	if err != nil {
-		h.Println(err)
+		h.sync.Println(err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -504,7 +500,7 @@ func (h *Handler) handleTree(w http.ResponseWriter, r *http.Request) {
 
 	err = json.NewEncoder(w).Encode(&response)
 	if err != nil {
-		h.Printf("Error encoding response: %v\n", err)
+		h.sync.Printf("Error encoding response: %v\n", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

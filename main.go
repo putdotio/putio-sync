@@ -48,7 +48,7 @@ func main() {
 	signal.Notify(sigCh, os.Interrupt, os.Kill)
 
 	sig := <-sigCh
-	log.Printf("%q signal received, closing...\n", sig)
+	log.Printf("%q signal received, closing running tasks...\n", sig)
 
 	err = sync.Close()
 	if err != nil {

@@ -80,12 +80,13 @@ func NewClient(debug bool) (*Client, error) {
 		return nil, err
 	}
 
-	err = os.MkdirAll(filepath.Join(u.HomeDir, ".putio-sync/"), 0755)
+	appPath := filepath.Join(u.HomeDir, ".putio-sync")
+	err = os.MkdirAll(appPath, 0755)
 	if err != nil {
 		return nil, err
 	}
 
-	cfgpath := filepath.Join(u.HomeDir, ".putio-sync/putio-sync.db")
+	cfgpath := filepath.Join(appPath, "putio-sync.db")
 	store := NewStore(cfgpath)
 
 	err = store.Open()
@@ -108,7 +109,7 @@ func NewClient(debug bool) (*Client, error) {
 	client.UserAgent = defaultUserAgent
 
 	return &Client{
-		Logger: NewLogger("sync: ", debug),
+		Logger: NewLogger("sync: ", debug, appPath),
 		Debug:  debug,
 		Config: cfg,
 		C:      client,
@@ -197,7 +198,12 @@ func (c *Client) Close() error {
 	}
 
 	// release the database handle
-	return c.Store.Close()
+	err = c.Store.Close()
+	if err != nil {
+		return err
+	}
+
+	return c.Logger.Close()
 }
 
 func (c *Client) Status() string {
