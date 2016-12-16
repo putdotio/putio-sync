@@ -1,12 +1,7 @@
 var _ = require('lodash');
 var gulp = require('gulp');
-var less = require('gulp-less');
-var gutil = require('gulp-util');
-var concat = require('gulp-concat');
-var uglify = require('gulp-uglify');
-var cssnano = require('gulp-cssnano');
-var replace = require('gulp-replace');
-var rename = require('gulp-rename');
+var gulpLoadPlugins = require('gulp-load-plugins');
+var $ = gulpLoadPlugins();
 var path = require('path');
 var webpack = require('webpack');
 var webpackConfig = require('./webpack.config.js');
@@ -195,15 +190,15 @@ gulp.task('translation-pull', ['translation-push'], function (done) {
 
 gulp.task('less', function () {
   gulp.src('./src/app/style.less')
-    .pipe(less())
-    .pipe(rename({ suffix: '.min' }))
-    .pipe(cssnano())
+    .pipe($.less())
+    .pipe($.rename({ suffix: '.min' }))
+    .pipe($.cssnano())
     .pipe(gulp.dest('./build/statics/css'));
 });
 
 gulp.task('less-dev', function () {
   gulp.src('./src/app/style.less')
-    .pipe(less())
+    .pipe($.less())
     .pipe(gulp.dest('./build/statics/css'))
     .pipe(browserSync.stream())
 });
@@ -217,9 +212,9 @@ gulp.task('html-dev', function () {
 gulp.task('html', function () {
   gulp
     .src('index.html')
-    .pipe(replace(/index.js/g, 'index.min.js'))
-    .pipe(replace(/style.css/g, 'style.min.css'))
-    .pipe(replace(/development/g, 'production'))
+    .pipe($.replace(/index.js/g, 'index.min.js'))
+    .pipe($.replace(/style.css/g, 'style.min.css'))
+    .pipe($.replace(/development/g, 'production'))
     .pipe(gulp.dest('build'));
 })
 
@@ -289,7 +284,7 @@ var devCompiler = webpack(webpackDevConfig);
 gulp.task('webpack:build-dev', function (callback) {
   devCompiler.run(function (err, stats) {
     if (err) {
-      throw new gutil.PluginError('webpack:build-dev', err);
+      throw new $.gutil.PluginError('webpack:build-dev', err);
     }
 
     gutil.log('[webpack:build-dev]', stats.toString({
@@ -306,7 +301,7 @@ gulp.task('libjs-dev', function () {
     .src([
       'bower_components/tus-js-client/dist/tus.js',
     ])
-    .pipe(concat('lib.js'))
+    .pipe($.concat('lib.js'))
     .pipe(gulp.dest('./build/statics/js'));
 })
 
@@ -315,9 +310,9 @@ gulp.task('libjs', function () {
     .src([
       'bower_components/tus-js-client/dist/tus.js',
     ])
-    .pipe(concat('lib.js'))
-    .pipe(rename({ suffix: '.min' }))
-    .pipe(uglify())
+    .pipe($.concat('lib.js'))
+    .pipe($.rename({ suffix: '.min' }))
+    .pipe($.uglify())
     .pipe(gulp.dest('./build/statics/js'));
 })
 
