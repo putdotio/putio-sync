@@ -50,9 +50,12 @@ type Config struct {
 // Duration is a JSON wrapper type for time.Duration.
 type Duration time.Duration
 
-// ensure duration implements both these interfaces for our json encoding/decoding.
-var _ encoding.TextMarshaler = new(Duration)
-var _ encoding.TextUnmarshaler = new(Duration)
+// Ensure Duration implements both these interfaces for custom JSON
+// marshal/unmarshaller.
+var (
+	_ encoding.TextMarshaler   = new(Duration)
+	_ encoding.TextUnmarshaler = new(Duration)
+)
 
 func (d Duration) String() string {
 	return time.Duration(d).String()
