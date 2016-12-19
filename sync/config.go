@@ -25,8 +25,7 @@ type Config struct {
 	// Download Put.io files to this directory
 	DownloadTo string `json:"download-to"`
 
-	// Download files only in this directory (id)
-	// Defaults to root directory (id: 0)
+	// Download files only in this directory (Put.io file ID)
 	DownloadFrom int64 `json:"download-from"`
 
 	// Max number of connections to server for each download
