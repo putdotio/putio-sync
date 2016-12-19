@@ -27,21 +27,21 @@ func (m *Tasks) Add(t *Task) {
 	m.Lock()
 	defer m.Unlock()
 
-	m.s[t.f.ID] = t
+	m.s[t.state.FileID] = t
 }
 
 func (m *Tasks) Remove(t *Task) {
 	m.Lock()
 	defer m.Unlock()
 
-	delete(m.s, t.f.ID)
+	delete(m.s, t.state.FileID)
 }
 
 func (m *Tasks) Exists(t *Task) bool {
 	m.Lock()
 	defer m.Unlock()
 
-	_, ok := m.s[t.f.ID]
+	_, ok := m.s[t.state.FileID]
 	return ok
 }
 
@@ -66,16 +66,23 @@ func (c chunk) String() string {
 }
 
 type Task struct {
-	f      putio.File
-	cwd    string
 	state  *State
+	cwd    string
 	chunks []*chunk
+}
+
+func NewTask(f putio.File, cwd, downloadTo string) *Task {
+	savedTo := filepath.Join(downloadTo, cwd)
+	return &Task{
+		state: NewState(f, savedTo),
+		cwd:   cwd,
+	}
 }
 
 func (t Task) String() string {
 	return fmt.Sprintf("task<name: %q, size: %v, chunks: %v, bitfield: %v>",
-		trimPath(path.Join(t.cwd, t.f.Name)),
-		t.f.Size,
+		trimPath(path.Join(t.cwd, t.state.FileName)),
+		t.state.FileLength,
 		t.chunks,
 		t.state.Bitfield.Len(),
 	)
@@ -84,7 +91,7 @@ func (t Task) String() string {
 // verify checks bitfield integrity and computes CRC32 of the given task.
 func verify(r io.Reader, task *Task) error {
 	if !task.state.Bitfield.All() {
-		return fmt.Errorf("Not all bits are downloaded for file: %v (id: %v)", task.f.Name, task.f.ID)
+		return fmt.Errorf("Not all bits are downloaded for task: %q\n", task)
 	}
 
 	h := crc32.NewIEEE()
@@ -95,8 +102,8 @@ func verify(r io.Reader, task *Task) error {
 
 	sum := h.Sum(nil)
 	sumHex := hex.EncodeToString(sum)
-	if sumHex != task.f.CRC32 {
-		return fmt.Errorf("CRC32 check failed. got: %x want: %v", sumHex, task.f.CRC32)
+	if sumHex != task.state.CRC32 {
+		return fmt.Errorf("CRC32 check failed. got: %x want: %v", sumHex, task.state.CRC32)
 	}
 
 	return nil

@@ -135,7 +135,6 @@ func (s *State) String() string {
 // bit represents the said constant.
 func calculateChunks(state *State, segmentnum uint) []*chunk {
 	count := int64(segmentnum)
-
 	pieceLength := int64(state.BitfieldPieceLength)
 
 	// calculate the chunks of a resumable file.

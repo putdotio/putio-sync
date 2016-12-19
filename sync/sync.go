@@ -307,10 +307,7 @@ func (c *Client) walk(ctx context.Context, putioFolderID int64, cwd string) {
 			continue
 		}
 
-		t := &Task{
-			f:   file,
-			cwd: cwd,
-		}
+		t := NewTask(file, cwd, c.Config.DownloadTo)
 
 		select {
 		case <-c.Ctx.Done():
@@ -354,26 +351,25 @@ func (c *Client) consumeTasks(ctx context.Context, wg *sync.WaitGroup) {
 }
 
 func (c *Client) processTask(ctx context.Context, t *Task) {
-	// resume from previous download if possible.
-	state, err := c.Store.State(int64(t.f.ID), c.User.Username)
+	// search for previous states
+	state, err := c.Store.State(int64(t.state.FileID), c.User.Username)
 	if err != nil && err != ErrStateNotFound {
-		c.Debugf("Error retrieving state for file %q: %v\n", t.f, err)
+		c.Printf("Error retrieving state for file %q: %v\n", t.state.FileID, err)
 		return
 	}
 
-	// new download
 	if err == ErrStateNotFound {
-		c.Debugf("State not found for file %q, creating a new one\n", t.f)
-		savedTo := filepath.Join(c.Config.DownloadTo, t.cwd)
-		state = NewState(t.f, savedTo)
+		c.Debugf("State not found for file %q, using the fresh state\n", t.state.FileName)
+	} else {
+		c.Debugf("Existing state found for file %q, resuming... \n", t.state.FileName)
+		t.state = state
 	}
 
 	// skip already synced tasks
-	if state.DownloadStatus == DownloadCompleted {
+	if t.state.DownloadStatus == DownloadCompleted {
 		return
 	}
 
-	t.state = state
 	t.chunks = calculateChunks(t.state, c.Config.SegmentsPerFile)
 
 	err = c.download(ctx, t)
@@ -397,7 +393,7 @@ func (c *Client) download(ctx context.Context, t *Task) error {
 	taskdir := filepath.Join(filepath.Clean(c.Config.DownloadTo), t.cwd)
 	// absolute path of the file, with an extension added, indicating that the
 	// file is not completed yet.
-	taskpath := filepath.Join(taskdir, t.f.Name)
+	taskpath := filepath.Join(taskdir, t.state.FileName)
 	taskpath += inProgressExtension
 
 	_, err := os.Stat(taskdir)
@@ -484,11 +480,11 @@ func (c *Client) doRequest(ctx context.Context, t *Task, ch *chunk) (io.ReadClos
 	// 0 byte files cannot be retrieved with a range request. Servers will
 	// return "416 - Requested Range Not Satisfiable".
 	// Set the boundry only if the file has content.
-	if t.f.Size != 0 {
+	if t.state.FileLength != 0 {
 		rangeHeader.Set("Range", fmt.Sprintf("bytes=%v-%v", ch.offset, ch.offset+ch.length-1))
 	}
 
-	return c.C.Files.Download(ctx, t.f.ID, false, rangeHeader)
+	return c.C.Files.Download(ctx, t.state.FileID, false, rangeHeader)
 }
 
 func (c *Client) copyChunk(w io.WriterAt, body io.ReadCloser, ch *chunk, state *State) error {
