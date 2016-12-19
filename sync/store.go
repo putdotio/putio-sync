@@ -147,26 +147,6 @@ func (s *Store) States(forUser string) ([]*State, error) {
 	return states, err
 }
 
-// StateN returns the number of states in the store.
-func (s *Store) StateN(forUser string) (int, error) {
-	if forUser == "" {
-		return 0, nil
-	}
-
-	var n int
-	err := s.db.View(func(tx *bolt.Tx) error {
-		userBkt := tx.Bucket([]byte(forUser))
-		downloadsBkt := userBkt.Bucket(downloadItemsBucket)
-
-		cursor := downloadsBkt.Cursor()
-		for k, _ := cursor.First(); k != nil; k, _ = cursor.Next() {
-			n++
-		}
-		return nil
-	})
-	return n, err
-}
-
 func (s *Store) Config(forUser string) (*Config, error) {
 	if forUser == "" {
 		return s.DefaultConfig()
