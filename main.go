@@ -45,7 +45,7 @@ func main() {
 	}
 
 	sigCh := make(chan os.Signal, 1)
-	signal.Notify(sigCh, os.Interrupt, os.Kill)
+	signal.Notify(sigCh, os.Interrupt)
 
 	sig := <-sigCh
 	log.Printf("%q signal received, closing running tasks...\n", sig)
