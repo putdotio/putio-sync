@@ -45,6 +45,9 @@ type Config struct {
 
 	// Last pause/resume state
 	IsPaused bool `json:"is-paused"`
+
+	// Delete the remote file after a successful download
+	DeleteRemoteFile bool `json:"delete-remotefile"`
 }
 
 // Duration is a JSON wrapper type for time.Duration.

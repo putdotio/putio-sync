@@ -222,7 +222,10 @@ func (h *Handler) handleConfig(w http.ResponseWriter, r *http.Request) {
 	if c.MaxParallelFiles > 0 {
 		h.sync.Config.MaxParallelFiles = c.MaxParallelFiles
 	}
+
 	h.sync.Config.IsPaused = c.IsPaused
+
+	h.sync.Config.DeleteRemoteFile = c.DeleteRemoteFile
 
 	err = h.sync.Store.SaveConfig(h.sync.Config, h.sync.User.Username)
 	if err != nil {

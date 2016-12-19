@@ -382,6 +382,14 @@ func (c *Client) processTask(ctx context.Context, t *Task) {
 		c.Printf("Error downloading %q. err: %v\n", t, err)
 		return
 	}
+
+	if c.Config.DeleteRemoteFile {
+		err = c.C.Files.Delete(ctx, t.state.FileID)
+		if err != nil {
+			c.Printf("File %v successfully downloaded but the remote file could not be deleted: %v\n", t, err)
+		}
+	}
+	c.Printf("File %v successfully downloaded\n", t)
 }
 
 // download fetches the given task, splits into multiple chunks and downloads
