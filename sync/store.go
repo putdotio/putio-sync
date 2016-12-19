@@ -206,6 +206,7 @@ func (s *Store) DefaultConfig() (*Config, error) {
 	}, nil
 }
 
+// CurrentUser returns the last login user.
 func (s *Store) CurrentUser() (string, error) {
 	var username []byte
 	err := s.db.View(func(tx *bolt.Tx) error {

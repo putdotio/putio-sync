@@ -64,12 +64,12 @@ func (d Duration) String() string {
 	return time.Duration(d).String()
 }
 
-// MarshalText converts a duration to a string for decoding json.
+// MarshalText implements json.Marshaler for Duration.
 func (d Duration) MarshalText() ([]byte, error) {
 	return []byte(d.String()), nil
 }
 
-// UnmarshalText parses a JSON value into a Duration value.
+// UnmarshalText implements json.Unmarshaler for Duration.
 func (d *Duration) UnmarshalText(text []byte) error {
 	if len(text) == 0 {
 		return nil
