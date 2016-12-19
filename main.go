@@ -28,7 +28,7 @@ func main() {
 	var server *http.Server
 	if *serverFlag {
 		server = http.NewServer(sync)
-		err := server.Open()
+		err = server.Open()
 		if err != nil {
 			log.Fatalln(err)
 		}
