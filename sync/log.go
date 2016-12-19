@@ -30,7 +30,7 @@ func NewLogger(prefix string, debug bool, path string) *Logger {
 
 	return &Logger{
 		debug:  debug,
-		Logger: log.New(w, prefix, 0),
+		Logger: log.New(w, prefix, log.Lshortfile|log.LstdFlags),
 		w:      w,
 	}
 }

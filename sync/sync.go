@@ -161,6 +161,7 @@ func (c *Client) Run() error {
 	return nil
 }
 
+// Stop halts all running tasks in a graceful way.
 func (c *Client) Stop() error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -187,6 +188,8 @@ func (c *Client) Stop() error {
 	return nil
 }
 
+// Close releases all the resources, closes database connections and file
+// handles.
 func (c *Client) Close() error {
 	// unregister from watching filesystem events
 	notify.Stop(c.torrentsCh)
@@ -206,6 +209,7 @@ func (c *Client) Close() error {
 	return c.Logger.Close()
 }
 
+// Status returns current state of the synchronization client.
 func (c *Client) Status() string {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -310,10 +314,10 @@ func (c *Client) walk(ctx context.Context, putioFolderID int64, cwd string) {
 
 		select {
 		case <-c.Ctx.Done():
-			c.Debugf("[walk] context cancelled: %v\n", c.Ctx.Err())
+			c.Debugf("Context cancelled: %v\n", c.Ctx.Err())
 			return
 		case c.taskCh <- t:
-			c.Debugf("[walk] adding %v to queue\n", t)
+			c.Debugf("Adding %v to queue\n", t)
 		}
 	}
 }
@@ -353,13 +357,13 @@ func (c *Client) processTask(ctx context.Context, t *task) {
 	// resume from previous download if possible.
 	state, err := c.Store.State(int64(t.f.ID), c.User.Username)
 	if err != nil && err != ErrStateNotFound {
-		c.Debugf("[processTask] Error retrieving state for file: %v. Err: %v\n", t.f.ID, err)
+		c.Debugf("Error retrieving state for file %q: %v\n", t.f, err)
 		return
 	}
 
 	// new download
 	if err == ErrStateNotFound {
-		c.Debugf("processTask] state not found for file: %v, creating a new one\n", t.f.Name)
+		c.Debugf("State not found for file %q, creating a new one\n", t.f)
 		savedTo := filepath.Join(c.Config.DownloadTo, t.cwd)
 		state = NewState(t.f, savedTo)
 	}
@@ -374,12 +378,12 @@ func (c *Client) processTask(ctx context.Context, t *task) {
 
 	err = c.download(ctx, t)
 	if err == context.Canceled {
-		c.Debugf("[processTask] cancelled by request\n")
+		c.Debugf("Task %q cancelled by request\n", t)
 		return
 	}
 
 	if err != nil {
-		c.Printf("processTask] error downloading %v. err: %v\n", t, err)
+		c.Printf("Error downloading %q. err: %v\n", t, err)
 		return
 	}
 }
@@ -387,7 +391,7 @@ func (c *Client) processTask(ctx context.Context, t *task) {
 // download fetches the given task, splits into multiple chunks and downloads
 // them concurrently.
 func (c *Client) download(ctx context.Context, t *task) error {
-	c.Debugf("[download] starting to download task: %v\n", t)
+	c.Debugf("Starting to download: %v\n", t)
 
 	// parent directory of the file
 	taskdir := filepath.Join(filepath.Clean(c.Config.DownloadTo), t.cwd)
@@ -468,7 +472,7 @@ func (c *Client) download(ctx context.Context, t *task) error {
 func (c *Client) downloadRange(ctx context.Context, w io.WriterAt, t *task, ch *chunk) error {
 	body, err := c.doRequest(ctx, t, ch)
 	if err != nil {
-		c.Debugf("[downloadRange] doRequest failed: %v\n", err)
+		c.Debugf("Error retrieving body for %q/%q: %v\n", ch, t, err)
 		return err
 	}
 
@@ -488,7 +492,7 @@ func (c *Client) doRequest(ctx context.Context, t *task, ch *chunk) (io.ReadClos
 }
 
 func (c *Client) copyChunk(w io.WriterAt, body io.ReadCloser, ch *chunk, state *State) error {
-	c.Debugf("[copyChunk] copying %v of %v\n", ch, state.FileName)
+	c.Debugf("Copying %v of %v\n", ch, state.FileName)
 
 	defer body.Close()
 
@@ -505,13 +509,13 @@ func (c *Client) copyChunk(w io.WriterAt, body io.ReadCloser, ch *chunk, state *
 
 		written, err := io.ReadFull(body, buf[:n])
 		if err != nil {
-			c.Debugf("[copyChunk] io.CopyN failed: %v\n", err)
+			c.Debugf("Error copying body: %v\n", err)
 			return err
 		}
 
 		_, err = w.WriteAt(buf[:n], curoffset)
 		if err != nil {
-			c.Debugf("[copyChunk] w.WriteAt failed: %v\n", err)
+			c.Debugf("Error writing body at offset %v: %v\n", curoffset, err)
 			return err
 		}
 
@@ -526,7 +530,7 @@ func (c *Client) copyChunk(w io.WriterAt, body io.ReadCloser, ch *chunk, state *
 		}
 	}
 
-	c.Debugf("[copyChunk] copying %v of %v success\n", ch, state.FileName)
+	c.Debugf("Copying %q of %q success\n", ch, state.FileName)
 	return nil
 }
 
@@ -613,7 +617,7 @@ func (c *Client) WatchTorrentFolder() {
 				continue
 			}
 
-			c.Debugf("[watchTorrents] new event: %v, %v\n", event.Event(), path)
+			c.Debugf("New event: %v, %v\n", event.Event(), path)
 
 			err = uploadTorrentFunc(path)
 			if err != nil {
