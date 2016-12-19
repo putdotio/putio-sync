@@ -8,8 +8,8 @@ import (
 )
 
 const (
-	defaultAddr = ":3000"
-	debugAddr   = ":3001"
+	defaultAddr = ":3030"
+	debugAddr   = ":3031"
 )
 
 // Server represent the HTTP interface to the sync client.
