@@ -62,7 +62,7 @@ type Client struct {
 	CancelFunc context.CancelFunc
 
 	// Serves as a job queue
-	taskCh chan *task
+	taskCh chan *Task
 
 	// Channel to communicate when all tasks are done.
 	//
@@ -116,7 +116,7 @@ func NewClient(debug bool) (*Client, error) {
 		User:   nil,
 		Store:  store,
 		Tasks:  NewTasks(),
-		taskCh: make(chan *task),
+		taskCh: make(chan *Task),
 		// Make the channel buffered to ensure no event is dropped.
 		// Notify will drop an event if the receiver is not able to
 		// keep up the sending pace.
@@ -307,7 +307,7 @@ func (c *Client) walk(ctx context.Context, putioFolderID int64, cwd string) {
 			continue
 		}
 
-		t := &task{
+		t := &Task{
 			f:   file,
 			cwd: cwd,
 		}
@@ -353,7 +353,7 @@ func (c *Client) consumeTasks(ctx context.Context, wg *sync.WaitGroup) {
 	}
 }
 
-func (c *Client) processTask(ctx context.Context, t *task) {
+func (c *Client) processTask(ctx context.Context, t *Task) {
 	// resume from previous download if possible.
 	state, err := c.Store.State(int64(t.f.ID), c.User.Username)
 	if err != nil && err != ErrStateNotFound {
@@ -390,7 +390,7 @@ func (c *Client) processTask(ctx context.Context, t *task) {
 
 // download fetches the given task, splits into multiple chunks and downloads
 // them concurrently.
-func (c *Client) download(ctx context.Context, t *task) error {
+func (c *Client) download(ctx context.Context, t *Task) error {
 	c.Debugf("Starting to download: %v\n", t)
 
 	// parent directory of the file
@@ -469,7 +469,7 @@ func (c *Client) download(ctx context.Context, t *task) error {
 	return c.Store.SaveState(t.state, c.User.Username)
 }
 
-func (c *Client) downloadRange(ctx context.Context, w io.WriterAt, t *task, ch *chunk) error {
+func (c *Client) downloadRange(ctx context.Context, w io.WriterAt, t *Task, ch *chunk) error {
 	body, err := c.doRequest(ctx, t, ch)
 	if err != nil {
 		c.Debugf("Error retrieving body for %q/%q: %v\n", ch, t, err)
@@ -479,7 +479,7 @@ func (c *Client) downloadRange(ctx context.Context, w io.WriterAt, t *task, ch *
 	return c.copyChunk(w, body, ch, t.state)
 }
 
-func (c *Client) doRequest(ctx context.Context, t *task, ch *chunk) (io.ReadCloser, error) {
+func (c *Client) doRequest(ctx context.Context, t *Task, ch *chunk) (io.ReadCloser, error) {
 	rangeHeader := http.Header{}
 	// 0 byte files cannot be retrieved with a range request. Servers will
 	// return "416 - Requested Range Not Satisfiable".

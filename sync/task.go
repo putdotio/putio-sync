@@ -16,28 +16,28 @@ import (
 // Tasks stores active tasks.
 type Tasks struct {
 	sync.Mutex
-	s map[int64]*task
+	s map[int64]*Task
 }
 
 func NewTasks() *Tasks {
-	return &Tasks{s: make(map[int64]*task)}
+	return &Tasks{s: make(map[int64]*Task)}
 }
 
-func (m *Tasks) Add(t *task) {
+func (m *Tasks) Add(t *Task) {
 	m.Lock()
 	defer m.Unlock()
 
 	m.s[t.f.ID] = t
 }
 
-func (m *Tasks) Remove(t *task) {
+func (m *Tasks) Remove(t *Task) {
 	m.Lock()
 	defer m.Unlock()
 
 	delete(m.s, t.f.ID)
 }
 
-func (m *Tasks) Exists(t *task) bool {
+func (m *Tasks) Exists(t *Task) bool {
 	m.Lock()
 	defer m.Unlock()
 
@@ -65,14 +65,14 @@ func (c chunk) String() string {
 	return fmt.Sprintf("chunk{%v-%v}", c.offset, c.offset+c.length)
 }
 
-type task struct {
+type Task struct {
 	f      putio.File
 	cwd    string
 	state  *State
 	chunks []*chunk
 }
 
-func (t task) String() string {
+func (t Task) String() string {
 	return fmt.Sprintf("task<name: %q, size: %v, chunks: %v, bitfield: %v>",
 		trimPath(path.Join(t.cwd, t.f.Name)),
 		t.f.Size,
@@ -82,7 +82,7 @@ func (t task) String() string {
 }
 
 // verify checks bitfield integrity and computes CRC32 of the given task.
-func verify(r io.Reader, task *task) error {
+func verify(r io.Reader, task *Task) error {
 	if !task.state.Bitfield.All() {
 		return fmt.Errorf("Not all bits are downloaded for file: %v (id: %v)", task.f.Name, task.f.ID)
 	}
