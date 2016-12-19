@@ -285,8 +285,8 @@ func (c *Client) queueTasks(ctx context.Context) {
 	for {
 		select {
 		case <-time.After(time.Duration(c.Config.PollInterval)):
-			c.walk(c.Ctx, c.Config.DownloadFrom, rootFolder)
-		case <-c.Ctx.Done():
+			c.walk(ctx, c.Config.DownloadFrom, rootFolder)
+		case <-ctx.Done():
 			return
 		}
 	}
@@ -310,8 +310,8 @@ func (c *Client) walk(ctx context.Context, putioFolderID int64, cwd string) {
 		t := NewTask(file, cwd, c.Config.DownloadTo)
 
 		select {
-		case <-c.Ctx.Done():
-			c.Debugf("Context cancelled: %v\n", c.Ctx.Err())
+		case <-ctx.Done():
+			c.Debugf("Context cancelled: %v\n", ctx.Err())
 			return
 		case c.taskCh <- t:
 			c.Debugf("Adding %v to queue\n", t)
