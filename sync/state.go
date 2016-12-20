@@ -21,6 +21,7 @@ const (
 	bitfieldPieceLength = 16 * 1024
 )
 
+// DownloadStatus represents the current status of a download.
 type DownloadStatus int
 
 const (
@@ -32,6 +33,7 @@ const (
 	DownloadCompleted
 )
 
+// String implements fmt.Stringer interface for DownloadStatus.
 func (ds DownloadStatus) String() string {
 	var s string
 	switch ds {
@@ -49,11 +51,12 @@ func (ds DownloadStatus) String() string {
 	return s
 }
 
+// MarshalJSON implements json.Marshaler interface for DownloadStatus.
 func (ds DownloadStatus) MarshalJSON() ([]byte, error) {
 	return []byte(fmt.Sprintf("\"%v\"", ds)), nil
 }
 
-// State is the high level representation of a Put.io control file.
+// State stores all the metadata and state of a download.
 type State struct {
 	// State version number
 	Version uint `json:"version"`
@@ -83,6 +86,7 @@ type State struct {
 
 	Error string `json:"fail-reason"`
 
+	// mu guards below
 	mu                              sync.Mutex
 	BytesTransferredSinceLastUpdate int64     `json:"-"`
 	Bitfield                        *Bitfield `json:"bitfield"`
@@ -113,6 +117,7 @@ func NewState(f putio.File, savedTo string) *State {
 	}
 }
 
+// String implements fmt.Stringer interface for State.
 func (s *State) String() string {
 	var buf bytes.Buffer
 	buf.WriteString(fmt.Sprintf("ID: %v\n", s.FileID))
