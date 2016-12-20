@@ -152,7 +152,7 @@ func (s *Store) Config(forUser string) (*Config, error) {
 		return s.DefaultConfig()
 	}
 
-	var cfg *Config
+	var cfg Config
 	err := s.db.View(func(tx *bolt.Tx) error {
 		userBkt := tx.Bucket([]byte(forUser))
 
@@ -163,14 +163,14 @@ func (s *Store) Config(forUser string) (*Config, error) {
 			return ErrConfigNotFound
 		}
 
-		return gob.NewDecoder(bytes.NewReader(value)).Decode(cfg)
+		return gob.NewDecoder(bytes.NewReader(value)).Decode(&cfg)
 	})
 
 	if err == ErrConfigNotFound {
-		cfg, err = s.DefaultConfig()
+		return s.DefaultConfig()
 	}
 
-	return cfg, err
+	return &cfg, err
 }
 
 func (s *Store) SaveConfig(cfg *Config, forUser string) error {
