@@ -162,8 +162,7 @@ func (c *Client) Run() error {
 	c.Ctx, c.CancelFunc = context.WithCancel(context.Background())
 	c.doneCh = make(chan struct{})
 
-	// FIXME(ig): find a way to build up the full path of the task
-	// go c.queueFailedTasks(c.Ctx)
+	go c.queueFailedTasks(c.Ctx)
 	go c.queueNewTasks(c.Ctx)
 
 	go c.runConsumers(c.Ctx)
@@ -300,8 +299,9 @@ func (c *Client) queueFailedTasks(ctx context.Context) {
 	for _, state := range states {
 		switch state.DownloadStatus {
 		case DownloadFailed, DownloadPaused:
-			// FIXME(ig): this is wrong. See other FIXME.
-			t := NewTask(state, "", 1)
+			dir, _ := filepath.Split(state.LocalPath)
+			cwd := strings.TrimPrefix(dir, c.Config.DownloadTo)
+			t := NewTask(state, cwd, c.Config.SegmentsPerFile)
 			select {
 			case c.taskCh <- t:
 				c.Debugf("Adding failed task %v to queue\n", t)
