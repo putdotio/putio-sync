@@ -88,10 +88,10 @@ func (t Task) String() string {
 	)
 }
 
-// verify checks bitfield integrity and computes CRC32 of the given task.
-func verify(r io.Reader, task *Task) error {
-	if !task.state.Bitfield.All() {
-		return fmt.Errorf("Not all bits are downloaded for task: %q\n", task)
+// Verify checks bitfield integrity and computes CRC32 of the task.
+func (t *Task) Verify(r io.Reader) error {
+	if !t.state.Bitfield.All() {
+		return fmt.Errorf("Not all bits are downloaded for task: %q\n", t)
 	}
 
 	h := crc32.NewIEEE()
@@ -102,8 +102,8 @@ func verify(r io.Reader, task *Task) error {
 
 	sum := h.Sum(nil)
 	sumHex := hex.EncodeToString(sum)
-	if sumHex != task.state.CRC32 {
-		return fmt.Errorf("CRC32 check failed. got: %x want: %v", sumHex, task.state.CRC32)
+	if sumHex != t.state.CRC32 {
+		return fmt.Errorf("CRC32 check failed. got: %x want: %v", sumHex, t.state.CRC32)
 	}
 
 	return nil

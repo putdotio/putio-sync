@@ -451,7 +451,7 @@ func (c *Client) download(ctx context.Context, t *Task) error {
 		return err
 	}
 
-	err = verify(f, t)
+	err = t.Verify(f)
 	if err != nil {
 		c.Printf("verification failed for %v: %v\n", t, err)
 		t.state.DownloadStatus = DownloadFailed
