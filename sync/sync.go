@@ -418,7 +418,7 @@ func (c *Client) download(ctx context.Context, t *Task) error {
 	}
 	defer f.Close()
 
-	// pre-allocate file space
+	// pre-allocate file space. It's ok if it fails.
 	_ = Preallocate(f, t.state.FileLength)
 
 	t.state.DownloadStartedAt = time.Now()
