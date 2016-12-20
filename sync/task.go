@@ -13,64 +13,15 @@ import (
 	"github.com/igungor/go-putio/putio"
 )
 
-// Tasks stores active tasks.
-type Tasks struct {
-	sync.Mutex
-	s map[int64]*Task
-}
-
-func NewTasks() *Tasks {
-	return &Tasks{s: make(map[int64]*Task)}
-}
-
-func (m *Tasks) Add(t *Task) {
-	m.Lock()
-	defer m.Unlock()
-
-	m.s[t.state.FileID] = t
-}
-
-func (m *Tasks) Remove(t *Task) {
-	m.Lock()
-	defer m.Unlock()
-
-	delete(m.s, t.state.FileID)
-}
-
-func (m *Tasks) Exists(t *Task) bool {
-	m.Lock()
-	defer m.Unlock()
-
-	_, ok := m.s[t.state.FileID]
-	return ok
-}
-
-func (m *Tasks) Empty() bool {
-	m.Lock()
-	defer m.Unlock()
-	return len(m.s) == 0
-}
-
-// chunk represents file chunks. Files can be split into pieces and downloaded
-// with multiple connections, each connection fetches a part of a file.
-type chunk struct {
-	// Where the chunk starts
-	offset int64
-
-	// Length of chunk
-	length int64
-}
-
-func (c chunk) String() string {
-	return fmt.Sprintf("chunk{%v-%v}", c.offset, c.offset+c.length)
-}
-
+// Task represent a download task, which is closely associated with a Put.io
+// file.
 type Task struct {
 	state  *State
 	cwd    string
 	chunks []*chunk
 }
 
+// NewTask creates a new Task, with a fresh internal state.
 func NewTask(f putio.File, cwd, downloadTo string) *Task {
 	savedTo := filepath.Join(downloadTo, cwd)
 	return &Task{
@@ -79,6 +30,7 @@ func NewTask(f putio.File, cwd, downloadTo string) *Task {
 	}
 }
 
+// String implements fmt.Stringer interface for the Task.
 func (t Task) String() string {
 	return fmt.Sprintf("task<name: %q, size: %v, chunks: %v, bitfield: %v>",
 		trimPath(path.Join(t.cwd, t.state.FileName)),
@@ -107,6 +59,50 @@ func (t *Task) Verify(r io.Reader) error {
 	}
 
 	return nil
+}
+
+// Tasks stores active tasks.
+type Tasks struct {
+	sync.Mutex
+	s map[int64]*Task
+}
+
+// NewTasks allocated a new Tasks, which stores active tasks.
+func NewTasks() *Tasks {
+	return &Tasks{s: make(map[int64]*Task)}
+}
+
+// Add adds given task to the store.
+func (m *Tasks) Add(t *Task) {
+	m.Lock()
+	defer m.Unlock()
+
+	m.s[t.state.FileID] = t
+}
+
+// Remove removes task from the store.
+func (m *Tasks) Remove(t *Task) {
+	m.Lock()
+	defer m.Unlock()
+
+	delete(m.s, t.state.FileID)
+}
+
+// Exists reports whether given task is in the store.
+func (m *Tasks) Exists(t *Task) bool {
+	m.Lock()
+	defer m.Unlock()
+
+	_, ok := m.s[t.state.FileID]
+	return ok
+}
+
+// Empty reports whether there are active tasks.
+func (m *Tasks) Empty() bool {
+	m.Lock()
+	defer m.Unlock()
+
+	return len(m.s) == 0
 }
 
 // trimPath trims the given path.
