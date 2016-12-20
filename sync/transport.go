@@ -30,6 +30,7 @@ func (r *retryTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 			return err
 		}
 		if response.StatusCode >= http.StatusInternalServerError {
+			_ = response.Body.Close()
 			return fmt.Errorf("Unexpected HTTP Status: %v", response.Status)
 		}
 		return nil
