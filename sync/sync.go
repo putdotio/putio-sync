@@ -94,7 +94,8 @@ func NewClient(debug bool) (*Client, error) {
 		return nil, err
 	}
 
-	cfg, err := store.Config("")
+	usr, _ := store.CurrentUser()
+	cfg, err := store.Config(usr)
 	if err != nil {
 		return nil, err
 	}
@@ -108,12 +109,18 @@ func NewClient(debug bool) (*Client, error) {
 	client := putio.NewClient(oauthClient)
 	client.UserAgent = defaultUserAgent
 
+	var account putio.AccountInfo
+	if cfg.OAuth2Token != "" {
+		// It's okay to ignore the error. account can be nil.
+		account, _ = client.Account.Info(nil)
+	}
+
 	return &Client{
 		Logger: NewLogger("sync: ", debug, appPath),
 		Debug:  debug,
 		Config: cfg,
 		C:      client,
-		User:   nil,
+		User:   &account,
 		Store:  store,
 		Tasks:  NewTasks(),
 		taskCh: make(chan *Task),
