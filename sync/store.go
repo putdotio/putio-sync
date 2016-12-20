@@ -208,20 +208,17 @@ func (s *Store) DefaultConfig() (*Config, error) {
 
 // CurrentUser returns the last login user.
 func (s *Store) CurrentUser() (string, error) {
-	var username []byte
+	var username string
 	err := s.db.View(func(tx *bolt.Tx) error {
 		bkt := tx.Bucket(defaultsBucket)
-		username = bkt.Get([]byte("current-user"))
+		value := bkt.Get([]byte("current-user"))
+		username = string(value)
 		return nil
 	})
 	if err != nil {
 		return "", err
 	}
-
-	if username == nil {
-		return "", nil
-	}
-	return string(username), nil
+	return username, nil
 }
 
 func (s *Store) SaveCurrentUser(username string) error {
