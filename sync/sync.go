@@ -155,7 +155,9 @@ func (c *Client) Run() error {
 	c.Ctx, c.CancelFunc = context.WithCancel(context.Background())
 	c.doneCh = make(chan struct{})
 
-	go c.queueTasks(c.Ctx)
+	go c.queueFailedTasks(c.Ctx)
+	go c.queueNewTasks(c.Ctx)
+
 	go c.runConsumers(c.Ctx)
 
 	return nil
@@ -278,7 +280,33 @@ func (c *Client) DeleteToken() error {
 	return c.Store.SaveCurrentUser("")
 }
 
-func (c *Client) queueTasks(ctx context.Context) {
+// queueFailedTasks retrieves paused and failed tasks from the store and pushes
+// them to the task channel.
+func (c *Client) queueFailedTasks(ctx context.Context) {
+	states, err := c.Store.States(c.User.Username)
+	if err != nil {
+		c.Printf("Error fetching states: %v\n", err)
+		return
+	}
+
+	for _, state := range states {
+		switch state.DownloadStatus {
+		case DownloadFailed, DownloadPaused:
+			t := NewTask(state)
+			select {
+			case c.taskCh <- t:
+				c.Debugf("Adding failed task %v to queue\n", t)
+			case <-ctx.Done():
+				c.Debugf("Context cancelled: %v\n", ctx.Err())
+				return
+			}
+		}
+	}
+}
+
+// queueNewTasks repeatedly calls walk function at predefined intervals to find
+// new files.
+func (c *Client) queueNewTasks(ctx context.Context) {
 	const rootFolder = "/"
 	c.walk(ctx, c.Config.DownloadFrom, rootFolder)
 
