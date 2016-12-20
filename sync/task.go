@@ -9,8 +9,6 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
-
-	"github.com/igungor/go-putio/putio"
 )
 
 // Task represent a download task, which is closely associated with a Put.io
@@ -22,11 +20,12 @@ type Task struct {
 }
 
 // NewTask creates a new Task, with a fresh internal state.
-func NewTask(f putio.File, cwd, downloadTo string) *Task {
-	savedTo := filepath.Join(downloadTo, cwd)
+func NewTask(state *State, cwd string, segmentnum uint) *Task {
+	chunks := calculateChunks(state, segmentnum)
 	return &Task{
-		state: NewState(f, savedTo),
-		cwd:   cwd,
+		state:  state,
+		cwd:    cwd,
+		chunks: chunks,
 	}
 }
 
