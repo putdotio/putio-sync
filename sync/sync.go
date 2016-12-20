@@ -301,7 +301,7 @@ func (c *Client) walk(ctx context.Context, putioFolderID int64, cwd string) {
 	}
 
 	for _, file := range files {
-		if file.ContentType == "application/x-directory" {
+		if file.IsDir() {
 			newcwd := filepath.Join(cwd, file.Name)
 			c.walk(ctx, file.ID, newcwd)
 			continue
