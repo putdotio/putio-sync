@@ -292,11 +292,12 @@ func (c *Client) queueTasks(ctx context.Context) {
 	}
 }
 
-// walk recursively walks the put.io filesystem, starting from the given
-// putioFolderID. All files are pushed to a task channel to be consumed.
+// walk recursively walks the Put.io filetree, starting from the given
+// putioFolderID. Only non-completed files are pushed to the task channel.
 func (c *Client) walk(ctx context.Context, putioFolderID int64, cwd string) {
 	files, _, err := c.C.Files.List(ctx, putioFolderID)
 	if err != nil {
+		c.Printf("Error listing directory %v: %v\n", putioFolderID, err)
 		return
 	}
 
@@ -307,14 +308,33 @@ func (c *Client) walk(ctx context.Context, putioFolderID int64, cwd string) {
 			continue
 		}
 
-		t := NewTask(file, cwd, c.Config.DownloadTo)
+		// look for an existing state, so that we can resume
+		state, err := c.Store.State(file.ID, c.User.Username)
+		if err != nil && err != ErrStateNotFound {
+			c.Printf("Error retrieving state for file %v: %v\n", file.ID, err)
+			continue
+		}
+
+		if err == ErrStateNotFound {
+			c.Debugf("State not found for %v, creating a new one\n", file)
+			savedTo := filepath.Join(c.Config.DownloadTo, cwd)
+			state = NewState(file, savedTo)
+		}
+
+		// skip already synced task
+		if state.DownloadStatus == DownloadCompleted {
+			c.Debugf("Skipping already downloaded file %v\n", file)
+			continue
+		}
+
+		t := NewTask(state, cwd, c.Config.SegmentsPerFile)
 
 		select {
+		case c.taskCh <- t:
+			c.Debugf("Adding %v to queue\n", t)
 		case <-ctx.Done():
 			c.Debugf("Context cancelled: %v\n", ctx.Err())
 			return
-		case c.taskCh <- t:
-			c.Debugf("Adding %v to queue\n", t)
 		}
 	}
 }
@@ -335,8 +355,6 @@ func (c *Client) consumeTasks(ctx context.Context, wg *sync.WaitGroup) {
 
 	for {
 		select {
-		case <-ctx.Done():
-			return
 		case t := <-c.taskCh:
 			// skip running tasks
 			if c.Tasks.Exists(t) {
@@ -346,33 +364,14 @@ func (c *Client) consumeTasks(ctx context.Context, wg *sync.WaitGroup) {
 			c.Tasks.Add(t)
 			c.processTask(ctx, t)
 			c.Tasks.Remove(t)
+		case <-ctx.Done():
+			return
 		}
 	}
 }
 
 func (c *Client) processTask(ctx context.Context, t *Task) {
-	// search for previous states
-	state, err := c.Store.State(int64(t.state.FileID), c.User.Username)
-	if err != nil && err != ErrStateNotFound {
-		c.Printf("Error retrieving state for file %q: %v\n", t.state.FileID, err)
-		return
-	}
-
-	if err == ErrStateNotFound {
-		c.Debugf("State not found for file %q, using the fresh state\n", t.state.FileName)
-	} else {
-		c.Debugf("Existing state found for file %q, resuming... \n", t.state.FileName)
-		t.state = state
-	}
-
-	// skip already synced tasks
-	if t.state.DownloadStatus == DownloadCompleted {
-		return
-	}
-
-	t.chunks = calculateChunks(t.state, c.Config.SegmentsPerFile)
-
-	err = c.download(ctx, t)
+	err := c.download(ctx, t)
 	if err == context.Canceled {
 		c.Debugf("Task %q cancelled by request\n", t)
 		return
