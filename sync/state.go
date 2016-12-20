@@ -56,7 +56,8 @@ func (ds DownloadStatus) MarshalJSON() ([]byte, error) {
 	return []byte(fmt.Sprintf("\"%v\"", ds)), nil
 }
 
-// State stores all the metadata and state of a download.
+// State stores all the metadata and state of a download. It is encoded as Gob
+// and stored to a persistent storage.
 type State struct {
 	// State version number
 	Version uint `json:"version"`
@@ -73,8 +74,8 @@ type State struct {
 	// Absolute path of the stored file
 	LocalPath string `json:"local_path"`
 
-	// Path relative to the Put.io root folder
-	RelativePath string `json:"-"`
+	// Directory of the file relative to the Put.io root folder
+	RemoteDir string `json:"-"`
 
 	// Download states
 	DownloadStatus     DownloadStatus `json:"download_status"`
