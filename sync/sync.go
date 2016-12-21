@@ -182,7 +182,7 @@ func (c *Client) Stop() error {
 	// cancel the poll/download cycle.
 	c.CancelFunc()
 
-	// wait for all the active running tasks to catch the cancellation signal.
+	// wait for all the active running tasks
 	<-c.doneCh
 
 	if !c.Config.IsPaused {
