@@ -18,8 +18,10 @@ var (
 	defaultsBucket        = []byte("defaults")
 )
 
+// Error represents a custom error.
 type Error string
 
+// Error implements error interface.
 func (e Error) Error() string { return string(e) }
 
 const (
@@ -28,15 +30,18 @@ const (
 	ErrSaveStateFailed = Error("state could not be saved")
 )
 
+// Store represents persistent storage for user configuration, states etc.
 type Store struct {
 	path string
 	db   *bolt.DB
 }
 
+// NewStore creates a new Store.
 func NewStore(path string) *Store {
 	return &Store{path: path}
 }
 
+// Open acquires database handle and creates default buckets.
 func (s *Store) Open() error {
 	db, err := bolt.Open(s.path, 0666, &bolt.Options{Timeout: 10 * time.Second})
 	if err != nil {
@@ -54,10 +59,13 @@ func (s *Store) Open() error {
 	return nil
 }
 
+// Close releases database handle.
 func (s *Store) Close() error { return s.db.Close() }
 
+// Path returns the full path of the database file.
 func (s *Store) Path() string { return s.path }
 
+// CreateBuckets creates default buckets for the given user.
 func (s *Store) CreateBuckets(forUser string) error {
 	return s.db.Update(func(tx *bolt.Tx) error {
 		userBkt, err := tx.CreateBucketIfNotExists([]byte(forUser))
@@ -147,6 +155,7 @@ func (s *Store) States(forUser string) ([]*State, error) {
 	return states, err
 }
 
+// Config returns configuration of the associated user.
 func (s *Store) Config(forUser string) (*Config, error) {
 	if forUser == "" {
 		return s.DefaultConfig()
@@ -173,6 +182,7 @@ func (s *Store) Config(forUser string) (*Config, error) {
 	return &cfg, err
 }
 
+// SaveConfig stores given configuration associated with given user.
 func (s *Store) SaveConfig(cfg *Config, forUser string) error {
 	return s.db.Update(func(tx *bolt.Tx) error {
 		userBkt := tx.Bucket([]byte(forUser))
@@ -189,6 +199,7 @@ func (s *Store) SaveConfig(cfg *Config, forUser string) error {
 	})
 }
 
+// DefaultConfig returns default configuration.
 func (s *Store) DefaultConfig() (*Config, error) {
 	u, err := user.Current()
 	if err != nil {
@@ -221,6 +232,8 @@ func (s *Store) CurrentUser() (string, error) {
 	return username, nil
 }
 
+// SaveCurrentUser stores the last login user. It is used to know which user is
+// active, and whose bucket should we get.
 func (s *Store) SaveCurrentUser(username string) error {
 	return s.db.Update(func(tx *bolt.Tx) error {
 		bkt := tx.Bucket(defaultsBucket)

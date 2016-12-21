@@ -7,12 +7,14 @@ import (
 	"path/filepath"
 )
 
+// Logger represents a custom log.Logger with debug methods.
 type Logger struct {
 	debug bool
 	*log.Logger
 	w io.WriteCloser
 }
 
+// NewLogger creates a new Logger. If path is not empty, it creates a log file.
 func NewLogger(prefix string, debug bool, path string) *Logger {
 	var w io.WriteCloser
 
@@ -35,6 +37,7 @@ func NewLogger(prefix string, debug bool, path string) *Logger {
 	}
 }
 
+// Debugf calls log.Printf if debug is enabled.
 func (l *Logger) Debugf(format string, v ...interface{}) {
 	if l.debug {
 		format += "[DEBUG] "
@@ -42,6 +45,7 @@ func (l *Logger) Debugf(format string, v ...interface{}) {
 	}
 }
 
+// Close closes the underlying file descriptor.
 func (l *Logger) Close() error {
 	return l.w.Close()
 }

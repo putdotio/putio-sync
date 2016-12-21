@@ -154,7 +154,7 @@ func (c *Client) Run() error {
 
 	if c.Config.IsPaused {
 		c.Config.IsPaused = false
-		c.Store.SaveConfig(c.Config, c.User.Username)
+		_ = c.Store.SaveConfig(c.Config, c.User.Username)
 	}
 
 	// assign the cancellation function to indicate that the client is already
@@ -187,7 +187,7 @@ func (c *Client) Stop() error {
 
 	if !c.Config.IsPaused {
 		c.Config.IsPaused = true
-		c.Store.SaveConfig(c.Config, c.User.Username)
+		_ = c.Store.SaveConfig(c.Config, c.User.Username)
 	}
 
 	// reset cancellation states for fresh start.

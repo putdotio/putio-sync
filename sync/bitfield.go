@@ -43,6 +43,7 @@ func (b *Bitfield) UnmarshalBinary(data []byte) error {
 	return nil
 }
 
+// MarshalJSON implements json.Marshaler interfaace for Bitfield.
 func (b *Bitfield) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
 		Length int `json:"bit_count_all"`
