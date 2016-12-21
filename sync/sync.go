@@ -131,7 +131,8 @@ func NewClient(debug bool) (*Client, error) {
 	}, nil
 }
 
-// Run starts watching the directory and consuming the download tasks.
+// Run starts watching the remote directory and spawns workers to consume
+// incoming tasks.
 func (c *Client) Run() error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
