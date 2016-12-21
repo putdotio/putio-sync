@@ -460,7 +460,7 @@ func (c *Client) download(ctx context.Context, t *Task) error {
 		c.Printf("Preallocation for %v failed: %v\n", t, err)
 	}
 
-	t.state.DownloadStartedAt = time.Now()
+	t.state.DownloadStartedAt = time.Now().UTC()
 	t.state.DownloadStatus = DownloadInProgress
 	t.state.BytesTransferredSinceLastUpdate = 0
 
