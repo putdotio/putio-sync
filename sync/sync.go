@@ -307,7 +307,7 @@ func (c *Client) queueFailedTasks(ctx context.Context) {
 			case c.taskCh <- t:
 				c.Debugf("Adding failed task %v to queue\n", t)
 			case <-ctx.Done():
-				c.Debugf("Context cancelled: %v\n", ctx.Err())
+				c.Debugf("Queueing failed tasks got cancelled: %v\n", ctx.Err())
 				return
 			}
 		}
@@ -325,6 +325,7 @@ func (c *Client) queueNewTasks(ctx context.Context) {
 		case <-time.After(time.Duration(c.Config.PollInterval)):
 			c.walk(ctx, c.Config.DownloadFrom, rootFolder)
 		case <-ctx.Done():
+			c.Debugf("Queueing new tasks got cancelled\n")
 			return
 		}
 	}
@@ -371,7 +372,7 @@ func (c *Client) walk(ctx context.Context, putioFolderID int64, cwd string) {
 		case c.taskCh <- t:
 			c.Debugf("Adding %v to queue\n", t)
 		case <-ctx.Done():
-			c.Debugf("Context cancelled: %v\n", ctx.Err())
+			c.Debugf("Directory walking got cancelled\n")
 			return
 		}
 	}
@@ -403,6 +404,7 @@ func (c *Client) consumeTasks(ctx context.Context, wg *sync.WaitGroup) {
 			c.processTask(ctx, t)
 			c.Tasks.Remove(t)
 		case <-ctx.Done():
+			c.Debugf("Consumer got cancelled\n")
 			return
 		}
 	}
