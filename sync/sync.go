@@ -413,12 +413,12 @@ func (c *Client) consumeTasks(ctx context.Context, wg *sync.WaitGroup) {
 func (c *Client) processTask(ctx context.Context, t *Task) {
 	err := c.download(ctx, t)
 	if err == context.Canceled {
-		c.Debugf("Task %q cancelled by request\n", t)
+		c.Debugf("Task %v cancelled by request\n", t)
 		return
 	}
 
 	if err != nil {
-		c.Printf("Error downloading %q. err: %v\n", t, err)
+		c.Printf("Error downloading %v. err: %v\n", t, err)
 		return
 	}
 
@@ -518,7 +518,7 @@ func (c *Client) download(ctx context.Context, t *Task) error {
 func (c *Client) downloadRange(ctx context.Context, w io.WriterAt, t *Task, ch *chunk) error {
 	body, err := c.doRequest(ctx, t, ch)
 	if err != nil {
-		c.Debugf("Error retrieving body for %q/%q: %v\n", ch, t, err)
+		c.Debugf("Error retrieving body for %v/%v: %v\n", ch, t, err)
 		return err
 	}
 
@@ -576,7 +576,7 @@ func (c *Client) copyChunk(w io.WriterAt, body io.ReadCloser, ch *chunk, state *
 		}
 	}
 
-	c.Debugf("Copying %q of %q success\n", ch, state.FileName)
+	c.Debugf("Copying %v of %q success\n", ch, state.FileName)
 	return nil
 }
 
