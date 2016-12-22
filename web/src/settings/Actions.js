@@ -15,13 +15,25 @@ export function Reset() {
   }
 }
 
-export const SET_SETTING = 'SET_SETTING'
+export const SET_SETTING_POLL_INTERVAL = 'SET_SETTING_POLL_INTERVAL'
 export function SetSettings(key, value, silent = false) {
   return (dispatch, getState) => {
     let config = getState().getIn([
       'app',
       'config',
     ])
+
+    if (key === 'pollInterval') {
+      const duration = value + 'm0s'
+
+      dispatch({
+        type: SET_SETTING_POLL_INTERVAL,
+        index: value,
+        value: duration,
+      })
+
+      value = duration
+    }
 
     const keyMap = {
       token:             'oauth2-token',
@@ -30,6 +42,7 @@ export function SetSettings(key, value, silent = false) {
       simultaneous:      'max-parallel-files',
       segments:          'segments-per-file',
       delete_remotefile: 'delete-remotefile',
+      pollInterval:      'poll-interval',
     }
 
     config = config.set(keyMap[key], value)

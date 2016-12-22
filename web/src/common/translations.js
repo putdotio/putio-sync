@@ -9,6 +9,7 @@ export default {
   downloads_empty_state_cta_label:      int._t('Settings'),
 
   /* SETTINGS */
+  settings_poll_interval_message:       int._t('Poll Interval'),
   settings_source_folder_label:         int._t('Source folder'),
   settings_source_folder_action_label:  int._t('Change'),
   settings_dest_folder_label:           int._t('Destination folder'),

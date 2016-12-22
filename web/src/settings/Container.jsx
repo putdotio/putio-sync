@@ -55,6 +55,20 @@ export class SettingsContainer extends React.Component {
       <div className="settings-container">
         <Form className="settings-form">
           <Row>
+            <RowTitle title={translations.settings_poll_interval_message()} />
+
+            <Select
+              name="poll-interval"
+              options={this.props.pollInterval.get('data')}
+              selected={this.props.pollInterval.get('selected')}
+              required={true}
+              onSelect={index => {
+                this.props.SetSettings('pollInterval', index + 1)
+              }}
+            />
+          </Row>
+
+          <Row>
             <RowTitle title={translations.settings_source_folder_label()} />
             <Input
               name="source-folder"
@@ -160,6 +174,7 @@ export class SettingsContainer extends React.Component {
 
 export const SettingsContainerConnected = connect(state => ({
   currentUser: state.getIn(['app', 'currentUser']),
+  pollInterval: state.getIn(['settings', 'pollInterval']),
   source: state.getIn(['settings', 'source']),
   dest: state.getIn(['settings', 'dest']),
   simultaneous: state.getIn(['settings', 'simultaneous']),
