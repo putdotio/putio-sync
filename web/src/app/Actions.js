@@ -5,8 +5,9 @@ import $ from 'zepto-modules'
 import Jed from 'jed'
 
 import { SyncApp, User } from '../app/Api'
-import { Files } from '../app/Api'
-import { int } from '../common'
+import { Files, Transfers } from '../app/Api'
+import { int, translations } from '../common'
+import Growl from '../components/growl'
 import * as DownloadsActions from '../downloads/Actions'
 
 export const SYNCAPP_STATUS_STOPPED = 'stopped'
@@ -160,6 +161,112 @@ export function Logout() {
           .then(response => {
             dispatch(GrantAccess())
           })
+      })
+  }
+}
+
+export function HandlePaste(e) {
+  return (dispatch, getState) => {
+    let text
+
+    if (window.clipboardData && window.clipboardData.getData) {
+      text = window.clipboardData.getData('Text');
+    } else if (e.clipboardData && e.clipboardData.getData) {
+      text = e.clipboardData.getData('text/plain');
+    }
+
+    if (text.match(/magnet:\?xt=urn/i) === null && text.match(/^https?.*$/ig) === null) {
+      return
+    }
+
+    dispatch(SetProcessing(true))
+    dispatch(StartTransfers(text))
+  }
+}
+
+export const ANALYSIS_SUCCESS = 'ANALYSIS_SUCCESS'
+export function StartTransfers(text) {
+  return (dispatch, getState) => {
+    const links = _.compact(text.split('\n'))
+
+    if (!links.length) {
+      Growl.Show({
+        message: translations.new_transfer_no_link_error(),
+        scope: Growl.SCOPE.ERROR,
+        timeout: 2,
+      })
+
+      return dispatch(SetProcessing(false))
+    }
+
+    Transfers
+      .Analysis(links)
+      .then(response => {
+        let eFiles = _.filter(response.body.ret, f => f.error)
+        let hasError = (eFiles.length === response.body.ret.length)
+        let someError = (eFiles.length && eFiles.length < response.body.ret.length)
+
+        if (hasError) {
+          Growl.Show({
+            message: translations.new_transfer_invalid_link_error(),
+            scope: Growl.SCOPE.ERROR,
+            timeout: 2,
+          })
+
+          return dispatch(SetProcessing(false))
+        }
+
+        if (someError) {
+          Growl.Show({
+            message: 'Some of the hashes couldn\'t add',
+            scope: Growl.SCOPE.ERROR,
+            timeout: 2,
+          })
+        }
+
+        const files = _.chain(response.body.ret)
+          .filter(f => !f.error)
+          .map(f => ({
+            id: f.url,
+            name: f.name,
+            size: f.file_size,
+            email_when_complete: false,
+            type: 'magnet',
+            _source: f,
+          }))
+          .value()
+
+        dispatch(StartFetching(files))
+      })
+      .catch(err => {
+        dispatch(SetProcessing(false))
+      })
+  }
+}
+
+export function StartFetching(files) {
+  return (dispatch, getState) => {
+    const magnets = fromJS(files)
+      .map(m => ({
+        url: m.get('id'),
+        email_when_complete: m.get('email_when_complete'),
+        extract: m.get('extract'),
+        save_parent_id: 0,
+      })).toJS()
+
+    Transfers
+      .StartFetching(magnets)
+      .then(response => {
+        Growl.Show({
+          message: translations.new_transfer_success_message(),
+          scope: Growl.SCOPE.SUCCESS,
+          timeout: 2,
+        })
+
+        dispatch(SetProcessing(false))
+      })
+      .catch(err => {
+        dispatch(SetProcessing(false))
       })
   }
 }

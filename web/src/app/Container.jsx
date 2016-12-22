@@ -2,6 +2,7 @@ import React from 'react'
 import PureRenderMixin from 'react-addons-pure-render-mixin'
 import { routerActions } from 'react-router-redux'
 import { connect } from 'react-redux'
+import $ from 'zepto-modules'
 
 import * as Actions from './Actions'
 import * as SettingsActions from '../settings/Actions'
@@ -18,6 +19,8 @@ export class AppContainer extends React.Component {
   }
 
   componentWillMount() {
+    $('body').on('paste', this.props.HandlePaste)
+
     let hash = (this.props.location.hash || '').split('=')
 
     if (hash.length === 2) {

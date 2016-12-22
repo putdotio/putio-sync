@@ -23,4 +23,9 @@ export default {
   /* FILE TREE */
   filetree_title:                       int._t('Please choose a folder'),
   filetree_action_cancel_label:         int._t('Cancel'),
+
+  /* NEW TRANSFER */
+  new_transfer_no_link_error:           int._t('There is no link to download'),
+  new_transfer_invalid_link_error:      int._t('Couldn\'t find anything to download there. We accept torrent hashes, magnet links, links to torrents and some video page links.'),
+  new_transfer_success_message:         int._t('Your transfers have been started.'),
 }

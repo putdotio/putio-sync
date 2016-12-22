@@ -85,3 +85,23 @@ export class Files {
       .End()
   }
 }
+
+export class Transfers {
+  static Analysis(links) {
+    return new Request()
+      .Post('/transfers/info')
+      .Send({
+        urls: links.join('\n'),
+      })
+      .End()
+  }
+
+  static StartFetching(magnets) {
+    return new Request()
+      .Post('/transfers/add-multi')
+      .Send({
+        urls: JSON.stringify(magnets),
+      })
+      .End()
+  }
+}
