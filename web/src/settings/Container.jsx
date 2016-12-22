@@ -137,6 +137,21 @@ export class SettingsContainer extends React.Component {
               }}
             />
           </Row>
+
+          <Row>
+            <Checkbox
+              id="settings-delete-remote-file"
+              label={translations.settings_delete_source_message()}
+              checked={this.props.delete_remotefile}
+              onChange={r => {
+                this.props.SetSettings('delete_remotefile', r)
+              }}
+            />
+
+            <RowHelp
+              help={translations.settings_delete_source_hint()}
+            />
+          </Row>
         </Form>
       </div>
     )
@@ -149,6 +164,7 @@ export const SettingsContainerConnected = connect(state => ({
   dest: state.getIn(['settings', 'dest']),
   simultaneous: state.getIn(['settings', 'simultaneous']),
   segments: state.getIn(['settings', 'segments']),
+  delete_remotefile: state.getIn(['settings', 'delete_remotefile']),
 }), Object.assign(
   Actions,
   routerActions

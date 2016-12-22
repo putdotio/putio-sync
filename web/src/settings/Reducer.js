@@ -9,6 +9,7 @@ export default function settings(state = fromJS({
   dest: '',
   simultaneous: 0,
   segments: 0,
+  delete_remotefile: false,
 }), action) {
   switch (action.type) {
 
@@ -17,6 +18,7 @@ export default function settings(state = fromJS({
         .set('dest', action.config['download-to'])
         .set('simultaneous', action.config['max-parallel-files'] - 1)
         .set('segments', action.config['segments-per-file'] - 1)
+        .set('delete_remotefile', action.config['delete-remotefile'])
     }
 
     case AppActions.GET_SOURCEFOLDER_SUCCESS: {

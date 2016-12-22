@@ -16,6 +16,8 @@ export default {
   settings_simultaneous_download_label: int._t('Simultaneous download'),
   settings_segments_perfile_label:      int._t('Segments per file'),
   settings_save_success_message:        int._t('Saved'),
+  settings_delete_source_message:       int._t('Delete original file'),
+  settings_delete_source_hint:          int._t('After a successful download'),
 
   /* FILE TREE */
   filetree_title:                       int._t('Please choose a folder'),

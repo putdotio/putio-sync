@@ -24,11 +24,12 @@ export function SetSettings(key, value, silent = false) {
     ])
 
     const keyMap = {
-      token:        'oauth2-token',
-      source:       'download-from',
-      dest:         'download-to',
-      simultaneous: 'max-parallel-files',
-      segments:     'segments-per-file',
+      token:             'oauth2-token',
+      source:            'download-from',
+      dest:              'download-to',
+      simultaneous:      'max-parallel-files',
+      segments:          'segments-per-file',
+      delete_remotefile: 'delete-remotefile',
     }
 
     config = config.set(keyMap[key], value)
