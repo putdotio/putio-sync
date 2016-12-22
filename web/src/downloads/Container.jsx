@@ -90,7 +90,7 @@ export class DownloadsContainer extends React.Component {
 
             const timeAgo = (file.get('download_status') === 'completed') ? (
               <span className="info-item">
-                {Filters.ToTimeAgo(file.get('download_finished_at'))}
+                {Filters.ToTimeAgo(file.get('download_finished_at'), true)}
               </span>
             ) : null
 
