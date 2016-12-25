@@ -27,7 +27,9 @@ export function GetConfig() {
         })
 
         dispatch(Authenticate())
-        dispatch(GetSourceFolder())
+        dispatch(GetSourceFolder(
+          response.body['download-from']
+        ))
       })
   }
 }
@@ -86,8 +88,20 @@ export function GrantAccess() {
   }
 }
 
+export function SaveToken(token) {
+  return (dispatch, getState) => {
+    SyncApp
+      .SetConfig({
+        'oauth2-token': token,
+      })
+      .then(response => {
+        dispatch(GetConfig())
+      })
+  }
+}
+
 export const GET_SOURCEFOLDER_SUCCESS = 'GET_SOURCEFOLDER_SUCCESS'
-export function GetSourceFolder() {
+export function GetSourceFolder(id) {
   return (dispatch, getState) => {
     const config = getState().getIn([
       'app',
@@ -95,7 +109,7 @@ export function GetSourceFolder() {
     ])
 
     Files
-      .Query(config.get('download-from'), {
+      .Query(id, {
         breadcrumbs: true,
       })
       .then(response => {
@@ -115,7 +129,8 @@ export function GetSourceFolder() {
 
         dispatch({
           type: GET_SOURCEFOLDER_SUCCESS,
-          source: `/${source}`,
+          source: parseInt(id),
+          sourceStr: `/${source}`,
         })
       })
   }

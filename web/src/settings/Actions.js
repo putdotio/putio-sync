@@ -15,8 +15,9 @@ export function Reset() {
   }
 }
 
+export const SET_SETTING = 'SET_SETTING'
 export const SET_SETTING_POLL_INTERVAL = 'SET_SETTING_POLL_INTERVAL'
-export function SetSettings(key, value, silent = false) {
+export function SetSettings(key, value) {
   return (dispatch, getState) => {
     let config = getState().getIn([
       'app',
@@ -28,12 +29,27 @@ export function SetSettings(key, value, silent = false) {
 
       dispatch({
         type: SET_SETTING_POLL_INTERVAL,
-        index: value,
+        index: value - 1,
         value: duration,
       })
 
       value = duration
+    } else {
+      dispatch({
+        type: SET_SETTING,
+        key,
+        value,
+      })
     }
+  }
+}
+
+export function SaveSettings(silent = false) {
+  return (dispatch, getState) => {
+    let config = getState().getIn([
+      'app',
+      'config',
+    ])
 
     const keyMap = {
       token:             'oauth2-token',
@@ -45,7 +61,13 @@ export function SetSettings(key, value, silent = false) {
       pollInterval:      'poll-interval',
     }
 
-    config = config.set(keyMap[key], value)
+    config = config
+      .set(keyMap['source'], getState().getIn(['settings', 'source']))
+      .set(keyMap['dest'], getState().getIn(['settings', 'dest']))
+      .set(keyMap['simultaneous'], getState().getIn(['settings', 'simultaneous']) + 1)
+      .set(keyMap['segments'], getState().getIn(['settings', 'segments']) + 1)
+      .set(keyMap['delete_remotefile'], getState().getIn(['settings', 'delete_remotefile']))
+      .set(keyMap['pollInterval'], getState().getIn(['settings', 'pollInterval', 'value']))
 
     SyncApp
       .SetConfig(config.toJS())

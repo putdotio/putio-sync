@@ -24,7 +24,7 @@ export class AppContainer extends React.Component {
     let hash = (this.props.location.hash || '').split('=')
 
     if (hash.length === 2) {
-      this.props.SetSettings('token', hash[1], true)
+      this.props.SaveToken(hash[1])
       this.props.push('/')
       return
     }

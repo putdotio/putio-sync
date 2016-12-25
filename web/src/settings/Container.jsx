@@ -8,6 +8,7 @@ import $ from 'zepto-modules'
 
 import store from '../app/store'
 import * as Actions from './Actions'
+import * as AppActions from '../app/Actions'
 import { translations } from '../common'
 
 import {
@@ -72,7 +73,7 @@ export class SettingsContainer extends React.Component {
             <RowTitle title={translations.settings_source_folder_label()} />
             <Input
               name="source-folder"
-              value={this.props.source}
+              value={this.props.sourceStr}
               disabled={true}
               action={(
                 <Button
@@ -83,7 +84,7 @@ export class SettingsContainer extends React.Component {
                     FileTree
                       .Show()
                       .then(folder => {
-                        this.props.SetSettings('source', folder.get('id'))
+                        this.props.GetSourceFolder(folder.get('id'))
                       })
                   }}
                 />
@@ -166,6 +167,14 @@ export class SettingsContainer extends React.Component {
               help={translations.settings_delete_source_hint()}
             />
           </Row>
+
+          <Row>
+            <Button
+              onClick={this.props.SaveSettings}
+              label={translations.settings_save_label()}
+              scope="btn-success"
+            />
+          </Row>
         </Form>
       </div>
     )
@@ -176,11 +185,13 @@ export const SettingsContainerConnected = connect(state => ({
   currentUser: state.getIn(['app', 'currentUser']),
   pollInterval: state.getIn(['settings', 'pollInterval']),
   source: state.getIn(['settings', 'source']),
+  sourceStr: state.getIn(['settings', 'sourceStr']),
   dest: state.getIn(['settings', 'dest']),
   simultaneous: state.getIn(['settings', 'simultaneous']),
   segments: state.getIn(['settings', 'segments']),
   delete_remotefile: state.getIn(['settings', 'delete_remotefile']),
 }), Object.assign(
   Actions,
+  AppActions,
   routerActions
 ))(SettingsContainer);

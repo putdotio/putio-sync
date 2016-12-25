@@ -22,7 +22,8 @@ export default function settings(state = fromJS({
       { value: '10', label: '10' },
     ],
   },
-  source: '',
+  source: 0,
+  sourceStr: '',
   dest: '',
   simultaneous: 0,
   segments: 0,
@@ -42,6 +43,14 @@ export default function settings(state = fromJS({
         .set('delete_remotefile', action.config['delete-remotefile'])
     }
 
+    case Actions.SET_SETTING: {
+      if (_.includes(['simultaneous', 'segments'], action.key)) {
+        action.value = action.value - 1
+      }
+
+      return state.set(action.key, action.value)
+    }
+
     case Actions.SET_SETTING_POLL_INTERVAL: {
       return state
         .setIn(['pollInterval', 'value'], action.value)
@@ -50,7 +59,8 @@ export default function settings(state = fromJS({
 
     case AppActions.GET_SOURCEFOLDER_SUCCESS: {
       return state
-        .set('source', fromJS(action.source))
+        .set('source', action.source)
+        .set('sourceStr', action.sourceStr)
     }
 
     default: {
