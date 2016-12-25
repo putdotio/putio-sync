@@ -8,7 +8,9 @@ import * as AppActions from '../app/Actions'
 import * as DownloadsActions from '../downloads/Actions'
 
 import Button from '../components/button'
+import Tooltip from '../components/tooltip'
 import Confirmation from '../components/modal/confirmation'
+import { translations } from '../common'
 import { SettingsContainer } from '../settings/Container'
 
 export class HeaderContainer extends React.Component {
@@ -24,17 +26,19 @@ export class HeaderContainer extends React.Component {
     if (this.props.status === AppActions.SYNCAPP_STATUS_STOPPED) {
       action = (
         <div className="item">
-          <a
-            href="#"
-            onClick={e => {
-              e.preventDefault()
-              e.stopPropagation()
+          <Tooltip text={translations.app_header_hint_play()}>
+            <a
+              href="#"
+              onClick={e => {
+                e.preventDefault()
+                e.stopPropagation()
 
-              this.props.Start()
-            }}
-          >
-            <i className="flaticon solid play-2" />
-          </a>
+                this.props.Start()
+              }}
+            >
+              <i className="flaticon solid play-2" />
+            </a>
+          </Tooltip>
         </div>
       )
 
@@ -48,17 +52,19 @@ export class HeaderContainer extends React.Component {
     if (this.props.status === AppActions.SYNCAPP_STATUS_SYNCING) {
       action = (
         <div className="item">
-          <a
-            href="#"
-            onClick={e => {
-              e.preventDefault()
-              e.stopPropagation()
+          <Tooltip text={translations.app_header_hint_pause()}>
+            <a
+              href="#"
+              onClick={e => {
+                e.preventDefault()
+                e.stopPropagation()
 
-              this.props.Stop()
-            }}
-          >
-            <i className="flaticon solid pause-2" />
-          </a>
+                this.props.Stop()
+              }}
+            >
+              <i className="flaticon solid pause-2" />
+            </a>
+          </Tooltip>
         </div>
       )
 
@@ -72,31 +78,35 @@ export class HeaderContainer extends React.Component {
     if (this.props.status === AppActions.SYNCAPP_STATUS_UPTODATE) {
       action = (this.props.config.get('is-paused')) ? (
         <div className="item">
-          <a
-            href="#"
-            onClick={e => {
-              e.preventDefault()
-              e.stopPropagation()
+          <Tooltip text={translations.app_header_hint_play()}>
+            <a
+              href="#"
+              onClick={e => {
+                e.preventDefault()
+                e.stopPropagation()
 
-              this.props.Start()
-            }}
-          >
-            <i className="flaticon solid play-2" />
-          </a>
+                this.props.Start()
+              }}
+            >
+              <i className="flaticon solid play-2" />
+            </a>
+          </Tooltip>
         </div>
       ) : (
         <div className="item">
-          <a
-            href="#"
-            onClick={e => {
-              e.preventDefault()
-              e.stopPropagation()
+          <Tooltip text={translations.app_header_hint_pause()}>
+            <a
+              href="#"
+              onClick={e => {
+                e.preventDefault()
+                e.stopPropagation()
 
-              this.props.Stop()
-            }}
-          >
-            <i className="flaticon solid pause-2" />
-          </a>
+                this.props.Stop()
+              }}
+            >
+              <i className="flaticon solid pause-2" />
+            </a>
+          </Tooltip>
         </div>
       )
 
@@ -119,59 +129,65 @@ export class HeaderContainer extends React.Component {
 
         <div className="right">
           <div className="item">
-            <a
-              href="#"
-              onClick={e => {
-                e.preventDefault()
-                e.stopPropagation()
+            <Tooltip text={translations.app_header_hint_clear()}>
+              <a
+                href="#"
+                onClick={e => {
+                  e.preventDefault()
+                  e.stopPropagation()
 
-                Confirmation.Show({
-                  small: true,
-                  message: 'Are you sure to clear finished downloads?',
-                })
-                  .then(r => {
-                    this.props.ClearFinished()
+                  Confirmation.Show({
+                    small: true,
+                    message: 'Are you sure to clear finished downloads?',
                   })
-              }}
-            >
-              <i className="flaticon solid magic-wand-1" />
-            </a>
+                    .then(r => {
+                      this.props.ClearFinished()
+                    })
+                }}
+              >
+                <i className="flaticon solid magic-wand-1" />
+              </a>
+            </Tooltip>
           </div>
 
           {action}
 
           <div className="item">
-            <a
-              href="#"
-              onClick={e => {
-                e.preventDefault()
-                e.stopPropagation()
+            <Tooltip text={translations.app_header_hint_settings()}>
+              <a
+                href="#"
+                onClick={e => {
+                  e.preventDefault()
+                  e.stopPropagation()
 
-                SettingsContainer.Show()
-              }}
-            >
-              <i className="flaticon stroke settings-2" />
-            </a>
+                  SettingsContainer.Show()
+                }}
+              >
+                <i className="flaticon stroke settings-2" />
+              </a>
+            </Tooltip>
           </div>
 
           <div className="item">
-            <a
-              href="#"
-              onClick={e => {
-                e.preventDefault()
-                e.stopPropagation()
+            <Tooltip text={translations.app_header_hint_logout()}>
+              <a
+                href="#"
+                onClick={e => {
+                  e.preventDefault()
+                  e.stopPropagation()
 
-                Confirmation.Show({
-                  small: true,
-                  message: 'Are you sure to logout?',
-                })
-                  .then(r => {
-                    this.props.Logout()
+                  Confirmation.Show({
+                    small: true,
+                    message: 'Are you sure to logout?',
                   })
-              }}
-            >
-              <i className="flaticon stroke logout-1" />
-            </a>
+                    .then(r => {
+                      this.props.Logout()
+                    })
+                }}
+              >
+                <i className="flaticon stroke logout-1" />
+              </a>
+            </Tooltip>
           </div>
         </div>
       </header>

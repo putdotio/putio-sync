@@ -1,0 +1,63 @@
+@import "../../common/style";
+
+.tooltip {
+  position: relative;
+  display: inline-block;
+
+  &:hover {
+    .tooltiptext {
+      visibility: visible;
+    }
+  }
+
+  .tooltiptext {
+    visibility: hidden;
+    position: absolute;
+    left: -25px;
+    top: 55px;
+    padding: 5px;
+    background-color: black;
+    color: #fff;
+    border-radius: 4px;
+    font-size: 12px;
+    line-height: 18px;
+    width: 60px;
+    text-align: center;
+    max-width: 60px;
+  }
+
+  .arrow-up {
+    width: 0;
+    height: 0;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-bottom: 5px solid black;
+    position: absolute;
+    left: 30px;
+    top: -5px;
+  }
+
+  .arrow-down {
+    width: 0;
+    height: 0;
+    border-left: 20px solid transparent;
+    border-right: 20px solid transparent;
+    border-top: 20px solid #f00;
+  }
+
+  .arrow-right {
+    width: 0;
+    height: 0;
+    border-top: 60px solid transparent;
+    border-bottom: 60px solid transparent;
+    border-left: 60px solid green;
+  }
+
+  .arrow-left {
+    width: 0;
+    height: 0;
+    border-top: 10px solid transparent;
+    border-bottom: 10px solid transparent;
+    border-right:10px solid blue;
+  }
+}

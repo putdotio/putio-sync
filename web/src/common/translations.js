@@ -5,6 +5,11 @@ export default {
   app_drag_drop_message:                int._t('Drop you files here'),
   app_drag_drop_success:                int._t('Uploaded'),
   app_drag_drop_error:                  int._t('An error occured, please try again'),
+  app_header_hint_clear:                int._t('Clear'),
+  app_header_hint_play:                 int._t('Play'),
+  app_header_hint_pause:                int._t('Pause'),
+  app_header_hint_settings:             int._t('Settings'),
+  app_header_hint_logout:               int._t('Logout'),
 
   /* DOWNLOADS */
   downloads_empty_state_title:          int._t('No downloads whatsover'),
