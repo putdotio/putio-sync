@@ -36,14 +36,19 @@ export default class HttpUploader {
         .set('Authorization', `token ${cookie.load('oauth_token')}`)
         .send(fd)
         .on('progress', e => {
-          onProgress(e.percent || 0)
+          if (typeof onProgress === 'function') {
+            onProgress(e.percent || 0)
+          }
         })
         .end((err, res) => {
           if (err) {
             return reject(err)
           }
 
-          onProgress(100)
+          if (typeof onProgress === 'function') {
+            onProgress(100)
+          }
+
           resolve(res)
         })
     })

@@ -46,8 +46,10 @@ export default class TusUploader {
         },
 
         onProgress: (bytesUploaded, bytesTotal) => {
-          let percent = (bytesUploaded / bytesTotal * 100).toFixed(2);
-          onProgress(percent)
+          if (typeof onProgress === 'function') {
+            let percent = (bytesUploaded / bytesTotal * 100).toFixed(2);
+            onProgress(percent)
+          }
         },
 
         onSuccess: () => {

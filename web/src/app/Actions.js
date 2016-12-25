@@ -7,6 +7,7 @@ import Jed from 'jed'
 import { SyncApp, User } from '../app/Api'
 import { Files, Transfers } from '../app/Api'
 import { int, translations } from '../common'
+import Uploader from '../uploader'
 import Growl from '../components/growl'
 import * as DownloadsActions from '../downloads/Actions'
 
@@ -273,31 +274,32 @@ export function StartFetching(files) {
 
 export function OnFileDrop(files) {
   return (dispatch, getState) => {
-    let downloadFolder = 0
+    dispatch(SetProcessing(true))
 
-    const defaultFolder = getState().getIn([
-      'app',
-      'currentUser',
-      'settings',
-      'default_download_folder',
-    ])
+    let uploader = new Uploader()
 
-    if (defaultFolder) {
-      downloadFolder = defaultFolder
-    }
+    _.each(files, f => {
+      uploader.add(f, 0)
+    })
 
-    const saveTo = getState().getIn([
-      'transfer',
-      'saveto',
-    ])
+    uploader.start()
+      .then(() => {
+        dispatch(SetProcessing(false))
 
-    if (saveTo) {
-      downloadFolder = saveTo.get('id')
-    }
+        Growl.Show({
+          message: translations.app_drag_drop_success(),
+          scope: Growl.SCOPE.SUCCESS,
+          timeout: 3,
+        })
+      })
+      .catch(err => {
+        dispatch(SetProcessing(false))
 
-    //dispatch(TasksActions.AddUploadTask(
-    //files,
-    //downloadFolder
-    //))
+        Growl.Show({
+          message: translations.app_drag_drop_error(),
+          scope: Growl.SCOPE.ERROR,
+          timeout: 3,
+        })
+      })
   }
 }

@@ -2,6 +2,7 @@ import React from 'react'
 import PureRenderMixin from 'react-addons-pure-render-mixin'
 import _ from 'lodash'
 import $ from 'zepto-modules'
+import { translations } from '../../common'
 
 export default class DragDrop extends React.Component {
   constructor() {
@@ -70,7 +71,7 @@ export default class DragDrop extends React.Component {
       >
         <div className="cloud">
           <i className="flaticon solid cloud-1"></i>
-          <h1>Drop your files here</h1>
+          <h1>{translations.app_drag_drop_message()}</h1>
         </div>
       </div>
     )

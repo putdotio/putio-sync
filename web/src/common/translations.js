@@ -2,6 +2,9 @@ import { int } from './'
 
 export default {
   /* APP */
+  app_drag_drop_message:                int._t('Drop you files here'),
+  app_drag_drop_success:                int._t('Uploaded'),
+  app_drag_drop_error:                  int._t('An error occured, please try again'),
 
   /* DOWNLOADS */
   downloads_empty_state_title:          int._t('No downloads whatsover'),

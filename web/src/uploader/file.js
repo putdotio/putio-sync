@@ -24,7 +24,9 @@ export default class File {
   upload(onProgress) {
     return this.uploader.upload(
       (progress) => {
-        onProgress(this, progress)
+        if (typeof onProgress === 'function') {
+          onProgress(this, progress)
+        }
       },
 
       this.name,
