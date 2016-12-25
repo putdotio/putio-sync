@@ -67,20 +67,34 @@ export class DownloadsContainer extends React.Component {
             const chunksDone = parseInt(file.getIn(['bitfield', 'bit_count_set']))
             const perc = (!chunksAll) ? 0 : chunksDone * 100 / chunksAll
 
-            const progress = (perc === 100) ? (
-              <Line
-                percent={perc}
-                strokeWidth="1"
-                strokeColor="#1fae7d"
-              />
-            ) : (
-              <Line
-                percent={perc}
-                strokeWidth="1"
-                trailWidth="1"
-                strokeColor="#FDCE45"
-              />
-            )
+            let progress
+
+            if (file.get('download_status') === 'failed') {
+              progress = (
+                <Line
+                  percent={perc}
+                  strokeWidth="1"
+                  strokeColor="#e74c3c"
+                />
+              )
+            } else if (perc === 100) {
+              progress = (
+                <Line
+                  percent={perc}
+                  strokeWidth="1"
+                  strokeColor="#1fae7d"
+                />
+              )
+            } else {
+              progress = (
+                <Line
+                  percent={perc}
+                  strokeWidth="1"
+                  trailWidth="1"
+                  strokeColor="#FDCE45"
+                />
+              )
+            }
 
             const name = (
               <div className="file-name">
@@ -120,6 +134,12 @@ export class DownloadsContainer extends React.Component {
               </span>
             )
 
+            const failedReason = (file.get('download_status') === 'failed')  ? (
+              <span className="info-item error">
+                {file.get('fail-reason')}
+              </span>
+            ) : null
+
             return (
               <div
                 key={file.get('file_id')}
@@ -129,6 +149,7 @@ export class DownloadsContainer extends React.Component {
                 {downloadSpeed}
                 {timeAgo}
                 {size}
+                {failedReason}
                 {progress}
               </div>
             )
