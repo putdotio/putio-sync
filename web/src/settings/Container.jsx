@@ -42,8 +42,8 @@ export class SettingsContainer extends React.Component {
             onCancel={reason => {
               this.Destroy(reason)
             }}
-            onSelect={folder => {
-              this.Destroy(null, folder)
+            onSave={() => {
+              this.Destroy()
             }}
           />
         )
@@ -170,7 +170,10 @@ export class SettingsContainer extends React.Component {
 
           <Row>
             <Button
-              onClick={this.props.SaveSettings}
+              onClick={() => {
+                this.props.SaveSettings()
+                this.props.onSave()
+              }}
               label={translations.settings_save_label()}
               scope="btn-success"
             />

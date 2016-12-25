@@ -71,6 +71,7 @@ ReactDOM.render((
     <Router history={history}>
       <Route path="/" component={AppContainerConnected}>
         <IndexRoute component={DownloadsContainerConnected} />
+        <Route path="welcome" component={DownloadsContainerConnected} />
         <Route path="settings" component={SettingsContainerConnected} />
       </Route>
     </Router>

@@ -95,7 +95,7 @@ export function SaveToken(token) {
         'oauth2-token': token,
       })
       .then(response => {
-        dispatch(GetConfig())
+        window.location.href = '/welcome'
       })
   }
 }

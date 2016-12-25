@@ -3,12 +3,15 @@ import PureRenderMixin from 'react-addons-pure-render-mixin'
 import { routerActions } from 'react-router-redux'
 import { connect } from 'react-redux'
 import $ from 'zepto-modules'
+import _ from 'lodash'
 
 import * as Actions from './Actions'
 import * as SettingsActions from '../settings/Actions'
+import * as DownloadsActions from '../downloads/Actions'
 
 import { HeaderContainerConnected } from '../header/Container'
 import { FooterContainerConnected } from '../footer/Container'
+import { SettingsContainer } from '../settings/Container'
 import DragDrop from '../components/dragdrop'
 import Loading from '../components/loading'
 
@@ -24,12 +27,21 @@ export class AppContainer extends React.Component {
     let hash = (this.props.location.hash || '').split('=')
 
     if (hash.length === 2) {
-      this.props.SaveToken(hash[1])
-      this.props.push('/')
-      return
+      return this.props.SaveToken(hash[1])
     }
 
     this.props.GetConfig()
+  }
+
+  componentDidMount() {
+    if (_.startsWith(this.props.location.pathname, '/welcome')) {
+      SettingsContainer
+        .Show()
+        .then(() => {
+          this.props.Start()
+          this.props.push('/')
+        })
+    }
   }
 
   render() {
@@ -70,5 +82,6 @@ export const AppContainerConnected = connect(state => ({
 }), Object.assign(
   Actions,
   SettingsActions,
+  DownloadsActions,
   routerActions
 ))(AppContainer)
