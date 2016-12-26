@@ -59,6 +59,12 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if strings.HasPrefix(r.URL.Path, "/welcome") {
+		r.URL.Path = "/"
+		fsHandler.ServeHTTP(w, r)
+		return
+	}
+
 	// dont serve static files on debug mode. Nodejs development server handles that
 	if !h.sync.Debug {
 		fsHandler.ServeHTTP(w, r)
