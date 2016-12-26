@@ -534,7 +534,13 @@ func (c *Client) doRequest(ctx context.Context, t *Task, ch *chunk) (io.ReadClos
 		rangeHeader.Set("Range", fmt.Sprintf("bytes=%v-%v", ch.offset, ch.offset+ch.length-1))
 	}
 
-	return c.C.Files.Download(ctx, t.state.FileID, false, rangeHeader)
+	body, err := c.C.Files.Download(ctx, t.state.FileID, false, rangeHeader)
+	if err != nil {
+		if strings.Contains(err.Error(), "request canceled") {
+			err = context.Canceled
+		}
+	}
+	return body, err
 }
 
 func (c *Client) copyChunk(w io.WriterAt, body io.ReadCloser, ch *chunk, state *State) error {
@@ -556,6 +562,12 @@ func (c *Client) copyChunk(w io.WriterAt, body io.ReadCloser, ch *chunk, state *
 		written, err := io.ReadFull(body, buf[:n])
 		if err != nil {
 			c.Debugf("Error copying body: %v\n", err)
+			// XXX: ugly workaround to detect cancellation error. Concrete
+			// error is not context.Canceled even though the cancel function is
+			// called.
+			if strings.Contains(err.Error(), "request canceled") {
+				return context.Canceled
+			}
 			return err
 		}
 
