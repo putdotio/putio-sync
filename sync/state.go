@@ -43,6 +43,8 @@ func (ds DownloadStatus) String() string {
 		s = "failed"
 	case DownloadInQueue:
 		s = "inqueue"
+	case DownloadPaused:
+		s = "paused"
 	case DownloadInProgress:
 		s = "inprogress"
 	case DownloadCompleted:
