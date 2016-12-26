@@ -64,6 +64,9 @@ type Client struct {
 	// Serves as a job queue
 	taskCh chan *Task
 
+	// semaphore channel to limit max outstanding running tasks
+	sem chan struct{}
+
 	// Channel to communicate when all tasks are done.
 	//
 	// doneCh is a volatile channel, meaning that client creates the channel on
@@ -115,6 +118,13 @@ func NewClient(debug bool) (*Client, error) {
 		account, _ = client.Account.Info(nil)
 	}
 
+	// FIXME: add comment about 50 (arbitrary big amount)
+	const big = 50
+	sem := make(chan struct{}, big)
+	for i := uint(0); i < big-cfg.MaxParallelFiles; i++ {
+		sem <- struct{}{}
+	}
+
 	return &Client{
 		Logger: NewLogger("sync: ", debug, appPath),
 		Debug:  debug,
@@ -124,6 +134,7 @@ func NewClient(debug bool) (*Client, error) {
 		Store:  store,
 		Tasks:  NewTasks(),
 		taskCh: make(chan *Task),
+		sem:    sem,
 		// Make the channel buffered to ensure no event is dropped.
 		// Notify will drop an event if the receiver is not able to
 		// keep up the sending pace.
@@ -378,35 +389,76 @@ func (c *Client) walk(ctx context.Context, putioFolderID int64, cwd string) {
 	}
 }
 
+// SetConcurrency dynamically resizes the number of active consumers.
+func (c *Client) AdjustConcurreny(n int) error {
+	c.Debugf("AdJustConcurrency called\n")
+
+	if n == 0 {
+		return nil
+	}
+
+	switch {
+	case n < 0:
+		for i := 0; i < -n; i++ {
+			select {
+			case c.sem <- struct{}{}:
+			case <-c.Ctx.Done():
+				return c.Ctx.Err()
+			}
+		}
+	case n > 0:
+		for i := 0; i < n; i++ {
+			select {
+			case <-c.sem:
+			case <-c.Ctx.Done():
+				return c.Ctx.Err()
+			}
+		}
+	}
+
+	return nil
+}
+
 func (c *Client) runConsumers(ctx context.Context) {
 	var wg sync.WaitGroup
-	for i := uint(0); i < c.Config.MaxParallelFiles; i++ {
-		wg.Add(1)
-		go c.consumeTasks(ctx, &wg)
+
+LOOP:
+	for {
+		select {
+		case c.sem <- struct{}{}:
+			c.Debugf("New consumer spawned\n")
+			wg.Add(1)
+			go c.consumeTask(ctx, &wg)
+		case <-c.Ctx.Done():
+			c.Debugf("Consumer runner got cancelled\n")
+			break LOOP
+		}
 	}
 
 	wg.Wait()
 	close(c.doneCh)
 }
 
-func (c *Client) consumeTasks(ctx context.Context, wg *sync.WaitGroup) {
+func (c *Client) consumeTask(ctx context.Context, wg *sync.WaitGroup) {
 	defer wg.Done()
 
-	for {
-		select {
-		case t := <-c.taskCh:
-			// skip running tasks
-			if c.Tasks.Exists(t) {
-				continue
-			}
-
-			c.Tasks.Add(t)
-			c.processTask(ctx, t)
-			c.Tasks.Remove(t)
-		case <-ctx.Done():
-			c.Debugf("Consumer got cancelled\n")
+	select {
+	case t := <-c.taskCh:
+		// skip running tasks
+		if c.Tasks.Exists(t) {
+			c.Debugf("%v is already in active tasks\n", t)
 			return
 		}
+
+		c.Tasks.Add(t)
+		c.processTask(ctx, t)
+		c.Tasks.Remove(t)
+
+		<-c.sem
+		return
+	case <-ctx.Done():
+		c.Debugf("Consumer got cancelled\n")
+		return
 	}
 }
 

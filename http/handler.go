@@ -204,7 +204,7 @@ func (h *Handler) handleConfig(w http.ResponseWriter, r *http.Request) {
 		err = h.sync.RenewToken()
 		if err != nil {
 			h.sync.Printf("Error renewing token: %v\n", err)
-			http.Error(w, "", http.StatusInternalServerError)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 	}
@@ -226,7 +226,14 @@ func (h *Handler) handleConfig(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if c.MaxParallelFiles > 0 {
+		oldmax, newmax := int(h.sync.Config.MaxParallelFiles), int(c.MaxParallelFiles)
 		h.sync.Config.MaxParallelFiles = c.MaxParallelFiles
+		err = h.sync.AdjustConcurreny(newmax - oldmax)
+		if err != nil {
+			h.sync.Printf("Error setting max parallel files: %v\n", err)
+			http.Error(w, "Error setting max parallel files", http.StatusBadRequest)
+			return
+		}
 	}
 
 	h.sync.Config.IsPaused = c.IsPaused
