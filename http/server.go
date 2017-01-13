@@ -9,7 +9,6 @@ import (
 
 const (
 	defaultAddr = ":3000"
-	debugAddr   = ":3001"
 )
 
 // Server represent the HTTP interface to the sync client.
@@ -21,16 +20,10 @@ type Server struct {
 
 // NewServer returns a new instance of Server.
 func NewServer(sync *sync.Client) *Server {
-	s := &Server{
+	return &Server{
 		Handler: NewHandler(sync),
+		Addr:    defaultAddr,
 	}
-
-	if sync.Debug {
-		s.Addr = debugAddr
-	} else {
-		s.Addr = defaultAddr
-	}
-	return s
 }
 
 // Open opens up the underlying socket for the HTTP server.
