@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
-	"os/user"
 	"path/filepath"
 	"runtime"
 	"sort"
@@ -471,13 +470,7 @@ func (h *Handler) handleGoToFile(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) handleTree(w http.ResponseWriter, r *http.Request) {
 	parent := r.FormValue("parent")
 	if parent == "" {
-		u, err := user.Current()
-		if err != nil {
-			h.sync.Println(err)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		parent = u.HomeDir
+		parent = "/"
 	}
 
 	files, err := ioutil.ReadDir(parent)
