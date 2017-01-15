@@ -97,5 +97,8 @@
     ]
   },
   "author": "Tolga Akyuz",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "gulp-load-plugins": "^1.4.0"
+  }
 }
