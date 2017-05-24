@@ -94,9 +94,8 @@ type AccountInfo struct {
 		Size  int64 `json:"size"`
 		Used  int64 `json:"used"`
 	} `json:"disk"`
-	HasVoucher                int      `json:"has_voucher"`
+	HasVoucher                bool     `json:"has_voucher"`
 	Mail                      string   `json:"mail"`
-	PassiveAccount            bool     `json:"passive_account"`
 	PlanExpirationDate        string   `json:"plan_expiration_date"`
 	Settings                  Settings `json:"settings"`
 	SimultaneousDownloadLimit int      `json:"simultaneous_download_limit"`

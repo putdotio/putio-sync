@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/cenk/bitfield"
-	"github.com/igungor/go-putio/putio"
+	"github.com/putdotio/go-putio/putio"
 )
 
 // XXX: Changing any of these constants will break the control file alignment.

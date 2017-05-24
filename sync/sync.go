@@ -12,11 +12,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/putdotio/go-putio/putio"
+	"github.com/rjeczalik/notify"
 	"golang.org/x/oauth2"
 	"golang.org/x/sync/errgroup"
-
-	"github.com/igungor/go-putio/putio"
-	"github.com/rjeczalik/notify"
 )
 
 // temporary extension to indicate that the file is still not downloaded.
