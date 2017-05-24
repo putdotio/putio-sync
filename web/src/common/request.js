@@ -10,7 +10,7 @@ export default class Request {
     this._url = 'https://put.io/v2'
 
     if (syncAPI) {
-      this._url = (__env__ === 'development') ? 'http://127.0.0.1:3001' : 'http://127.0.0.1:3000'
+      this._url = window.location.origin;
     }
 
     this._query = {}
