@@ -5,13 +5,7 @@ import tus from 'tus-js-client'
 export default class TusUploader {
   constructor(file) {
     this.file = file
-
-    this.endpoint = hostname({
-      protocol: 'https:',
-      subdomain: 'upload',
-      path: '/files/',
-    })
-
+    this.endpoint = 'https://upload.put.io/files/';
     this.tusUpload = null
   }
 

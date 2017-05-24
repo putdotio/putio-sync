@@ -4,13 +4,7 @@ import request from 'superagent'
 export default class HttpUploader {
   constructor(file) {
     this.file = file
-
-    this.endpoint = hostname({
-      protocol: 'https:',
-      subdomain: 'upload',
-      path: '/v2/files/upload',
-    })
-
+    this.endpoint = 'https://upload.put.io/v2/files/upload';
     this.req = null
   }
 

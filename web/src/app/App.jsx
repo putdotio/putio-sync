@@ -28,44 +28,6 @@ const history = syncHistoryWithStore(browserHistory, store, {
   selectLocationState: (state) => state.get('routing'),
 })
 
-window.hostname = ({
-  subdomain=null,
-  protocol=null,
-  path='',
-  query=''
-} = {}) => {
-  if (protocol === false) {
-    protocol = ''
-  } else {
-    protocol = protocol || window.location.protocol
-  }
-
-  query = (query) ? `?${query}` : ''
-  let hostname = window.location.hostname
-
-  if (_.includes(['127.0.0.1', 'localhost'], hostname)) {
-    hostname = 'put.io'
-  }
-
-  let splited = hostname.split('.')
-
-  if (subdomain === false) {
-    subdomain = ''
-  } else {
-    subdomain = subdomain || ((splited.length > 2) ? splited[0] : '')
-  }
-
-  if (subdomain) {
-    subdomain = `${subdomain}.`
-  }
-
-  let domain = (splited.length >= 2)
-    ? `${splited[splited.length - 2]}.${splited[splited.length - 1]}`
-    : 'put.io'
-
-  return `${protocol}//${subdomain}${domain}${path}${query}`
-}
-
 ReactDOM.render((
   <Provider store={store}>
     <Router history={history}>
