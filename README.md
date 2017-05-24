@@ -32,6 +32,10 @@ Run `putio-sync -server` and visit `http://127.0.0.1:3000`
 There is also a [macOS app](https://s3-eu-west-1.amazonaws.com/putio-mac-app/Putio.dmg) to start
 the server.
 
+# Developing
+
+This project uses uses https://github.com/FiloSottile/gvt for vendoring.
+
 # License
 
 MIT. See LICENSE file.
