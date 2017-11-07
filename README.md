@@ -1,5 +1,7 @@
 # putio-sync
 
+CURRENTLY DORMANT!
+
 putio-sync is a cross-platform command line program to download your preferred Put.io directory to your computer.
 
 It periodically watches for changes and downloads new content when they arrive.
