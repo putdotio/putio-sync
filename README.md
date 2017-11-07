@@ -6,8 +6,6 @@ putio-sync is a cross-platform command line program to download your preferred P
 
 It periodically watches for changes and downloads new content when they arrive.
 
-![](https://s3-eu-west-1.amazonaws.com/putio-mac-app/putio-sync-ss.png)
-
 ## Features
 
 * Cross platform
@@ -37,3 +35,6 @@ the server.
 # License
 
 MIT. See LICENSE file.
+
+![](https://s3-eu-west-1.amazonaws.com/putio-mac-app/putio-sync-ss.png)
+
