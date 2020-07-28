@@ -7,10 +7,8 @@ import (
 )
 
 type Config struct {
-	Username       string
-	Password       string
-	RemoteFolderID int64
-	LocalPath      string
+	Username string
+	Password string
 }
 
 func (c *Config) Read(configPath string) error {

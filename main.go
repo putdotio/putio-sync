@@ -19,9 +19,11 @@ var (
 )
 
 var (
-	config Config
-	db     *bbolt.DB
-	client *putio.Client
+	config         Config
+	db             *bbolt.DB
+	client         *putio.Client
+	localPath      string
+	remoteFolderID int64
 )
 
 func main() {
@@ -53,6 +55,10 @@ func main() {
 		log.Fatal(err)
 	}
 	err = ensureValidClient()
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = ensurePaths()
 	if err != nil {
 		log.Fatal(err)
 	}
