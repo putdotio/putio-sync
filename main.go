@@ -58,7 +58,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	err = ensurePaths()
+	err = ensureFolders()
 	if err != nil {
 		log.Fatal(err)
 	}
