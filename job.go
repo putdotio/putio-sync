@@ -25,7 +25,6 @@ func CreateJobs() error {
 	printFiles(remoteFiles, "Remote file:")
 
 	localFilesByPath := mapFiles(localFiles)
-
 	for _, rf := range remoteFiles {
 		if lf, ok := localFilesByPath[rf.RelPath()]; ok {
 			_ = lf
@@ -37,6 +36,16 @@ func CreateJobs() error {
 			// }
 		} else {
 			jobs = append(jobs, NewDownload(rf))
+		}
+	}
+
+	remoteFilesByPath := mapFiles(remoteFiles)
+	for _, lf := range localFiles {
+		if rf, ok := remoteFilesByPath[lf.RelPath()]; ok {
+			_ = rf
+			_ = ok
+		} else {
+			jobs = append(jobs, NewUpload(lf))
 		}
 	}
 	return nil
