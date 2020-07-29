@@ -14,16 +14,21 @@ import (
 const Version = "0.0.1"
 
 var (
-	configFlag  = flag.Bool("config", false, "print config file path")
 	versionFlag = flag.Bool("version", false, "print program version")
+	debugFlag   = flag.Bool("debug", false, "print debug logs")
+	configFlag  = flag.String("config", "", "path of config file")
+	username    = flag.String("username", "", "putio account username")
+	password    = flag.String("password", "", "putio account password")
 )
 
 var (
+	configPath     string
 	config         Config
 	db             *bbolt.DB
 	client         *putio.Client
 	localPath      string
 	remoteFolderID int64
+	jobs           []Job
 )
 
 func main() {
@@ -32,17 +37,29 @@ func main() {
 		fmt.Println(Version)
 		return
 	}
-	configPath, err := xdg.ConfigFile(filepath.Join("putio-sync", "config.toml"))
-	if err != nil {
-		log.Fatal(err)
+	if *debugFlag {
+		log.SetLevel(log.DEBUG)
 	}
-	if *configFlag {
-		fmt.Println(configPath)
-		return
+	if *configFlag != "" {
+		configPath = *configFlag
+	} else {
+		var err error
+		configPath, err = xdg.ConfigFile(filepath.Join("putio-sync", "config.toml"))
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 	log.Infoln("Using config file:", configPath)
-	err = config.Read(configPath)
-	if err != nil {
+	if err := config.Read(); err != nil {
+		log.Fatal(err)
+	}
+	if *username != "" {
+		config.Username = *username
+	}
+	if *password != "" {
+		config.Password = *password
+	}
+	if err := config.Validate(); err != nil {
 		log.Fatal(err)
 	}
 	dbPath, err := xdg.DataFile(filepath.Join("putio-sync", "sync.db"))
@@ -66,4 +83,5 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	log.Infoln("Sync finished")
 }

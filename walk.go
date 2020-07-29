@@ -13,61 +13,67 @@ import (
 var ignoredFiles = regexp.MustCompile(`(?i)(^|/)(desktop\.ini|thumbs\.db|\.ds_store|icon\r)$`)
 
 type Walker interface {
-	Walk(walkFn filepath.WalkFunc) error
+	Walk(walkFn WalkFunc) error
 }
+
+type WalkFunc func(file File, err error) error
 
 func WalkOnFolder(walker Walker) ([]File, error) {
 	var l []File
-	fn := func(path string, info os.FileInfo, err error) error {
+	fn := func(file File, err error) error {
 		if err != nil {
 			return err
 		}
-		if ignoredFiles.MatchString(info.Name()) {
+		if file.RelPath() == "." {
 			return nil
 		}
-		l = append(l, newFile(path, info))
+		if ignoredFiles.MatchString(file.Info().Name()) {
+			return nil
+		}
+		l = append(l, file)
 		return nil
 	}
-	err := walker.Walk(fn)
-	if err != nil {
-		return nil, err
-	}
-	return l, nil
+	return l, walker.Walk(fn)
 }
 
 type LocalWalker struct{}
 
-func (LocalWalker) Walk(walkFn filepath.WalkFunc) error {
-	return filepath.Walk(localPath, walkFn)
+func (LocalWalker) Walk(walkFn WalkFunc) error {
+	return filepath.Walk(localPath, func(path string, info os.FileInfo, err error) error {
+		relpath, err2 := filepath.Rel(localPath, path)
+		if err2 != nil {
+			panic(err2)
+		}
+		return walkFn(NewLocalFile(info, localPath, relpath), err)
+	})
 }
 
 type RemoteWalker struct{}
 
-func (RemoteWalker) Walk(walkFn filepath.WalkFunc) error {
+func (RemoteWalker) Walk(walkFn WalkFunc) error {
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
 	dir, err := client.Files.Get(ctx, remoteFolderID)
 	if err != nil {
-		return walkFn("/", nil, err)
+		return err
 	}
-	return walk("/", dir, walkFn)
+	return walk(".", dir, walkFn)
 }
 
-func walk(root string, dir putio.File, walkFn filepath.WalkFunc) error {
+func walk(relpath string, parent putio.File, walkFn WalkFunc) error {
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
-	children, parent, err := client.Files.List(ctx, dir.ID)
+	children, _, err := client.Files.List(ctx, parent.ID)
 	if err != nil {
-		return walkFn(root, nil, err)
+		return walkFn(nil, err)
 	}
-	root = path.Join(root, parent.Name)
-	err = walkFn(root, newFileInfo(parent), nil)
+	err = walkFn(NewRemoteFile(parent, relpath), nil)
 	if err != nil {
 		return err
 	}
 	for _, child := range children {
 		if !child.IsDir() {
-			err = walkFn(path.Join(root, child.Name), newFileInfo(child), nil)
+			err = walkFn(NewRemoteFile(child, path.Join(relpath, child.Name)), nil)
 			if err != nil {
 				return err
 			}
@@ -75,7 +81,7 @@ func walk(root string, dir putio.File, walkFn filepath.WalkFunc) error {
 	}
 	for _, child := range children {
 		if child.IsDir() {
-			err = walk(root, child, walkFn)
+			err = walk(path.Join(relpath, child.Name), child, walkFn)
 			if err != nil {
 				return err
 			}

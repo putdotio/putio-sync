@@ -1,8 +1,6 @@
 package main
 
 import (
-	"fmt"
-
 	"github.com/cenkalti/log"
 )
 
@@ -10,26 +8,20 @@ const folderName = "putio-sync"
 
 func sync() error {
 	log.Infof("Syncing https://put.io/files/%d with %q", remoteFolderID, localPath)
-	log.Infoln("printing local files")
-	files, err := WalkOnFolder(LocalWalker{})
+	err := CreateJobs()
 	if err != nil {
 		return err
 	}
-	for _, file := range files {
-		_ = printFile(file)
+	// Print jobs for debugging
+	for _, job := range jobs {
+		log.Debugln("Job:", job.String())
 	}
-	log.Infoln("printing remote files")
-	files, err = WalkOnFolder(RemoteWalker{})
-	if err != nil {
-		return err
+	// Run all jobs one by one
+	for _, job := range jobs {
+		err = job.Run()
+		if err != nil {
+			return err
+		}
 	}
-	for _, file := range files {
-		_ = printFile(file)
-	}
-	return nil
-}
-
-func printFile(info File) error {
-	fmt.Println(info.Path(), info.Size())
 	return nil
 }
