@@ -71,7 +71,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	err = ensureValidClient()
+	err = authenticate()
 	if err != nil {
 		log.Fatal(err)
 	}
