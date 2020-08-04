@@ -4,8 +4,6 @@ import (
 	"context"
 	"io"
 	"net/http"
-	"os"
-	"path/filepath"
 
 	"github.com/cenkalti/log"
 )
@@ -27,6 +25,10 @@ func (d *Download) String() string {
 
 func (d *Download) Run() error {
 	log.Infof("Downloading %q", d.remoteFile.RelPath())
+	lf, err := CreateLocalFile(d.remoteFile.RelPath())
+	if err != nil {
+		return err
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
 	u, err := client.Files.URL(ctx, d.remoteFile.putioFile.ID, true)
@@ -41,11 +43,26 @@ func (d *Download) Run() error {
 		return err
 	}
 	defer resp.Body.Close()
-	f, err := os.Create(filepath.Join(localPath, d.remoteFile.RelPath()))
+
+	// TODO get offset from database
+	var offset int64
+
+	rc, err := d.remoteFile.OpenForRead(offset)
 	if err != nil {
 		return err
 	}
-	defer f.Close()
-	_, err = io.Copy(f, resp.Body)
-	return err
+	defer rc.Close()
+
+	wc, err := lf.OpenForWrite(offset)
+	if err != nil {
+		return err
+	}
+	defer wc.Close()
+
+	_, err = io.Copy(wc, rc)
+	if err != nil {
+		return err
+	}
+
+	return wc.Close()
 }

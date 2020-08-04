@@ -12,6 +12,7 @@ type Job interface {
 func CreateJobs() error {
 	jobs = nil
 
+	// TODO walk on local and remote folders in parallel
 	localFiles, err := WalkOnFolder(LocalWalker{})
 	if err != nil {
 		return err

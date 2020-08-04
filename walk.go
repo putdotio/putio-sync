@@ -44,7 +44,7 @@ func (LocalWalker) Walk(walkFn WalkFunc) error {
 		if err2 != nil {
 			panic(err2)
 		}
-		return walkFn(NewLocalFile(info, localPath, relpath), err)
+		return walkFn(NewLocalFile(info, relpath), err)
 	})
 }
 
