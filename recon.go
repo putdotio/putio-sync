@@ -17,6 +17,8 @@ func Reconciliation(syncFiles map[string]*SyncFile) ([]Job, error) {
 	}
 	for _, sf := range files {
 		// TODO create jobs for non-existing folders
+		// TODO detect deletes
+		// TODO detect moves
 		switch {
 		case sf.local != nil && sf.remote == nil:
 			if sf.local.info.IsDir() {
