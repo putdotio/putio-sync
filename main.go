@@ -12,6 +12,8 @@ import (
 )
 
 // TODO Reconsiliation tests
+// TODO Measure download progress
+// TODO Measure upload progress
 // TODO Daemon mode
 // TODO HTTP API
 
