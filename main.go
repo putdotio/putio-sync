@@ -11,6 +11,10 @@ import (
 	"go.etcd.io/bbolt"
 )
 
+// Version of client. Set during build.
+// "0.0.0" is the development version.
+var Version = "0.0.0"
+
 // TODO Reconsiliation tests
 // TODO Measure download progress
 // TODO Measure upload progress
@@ -19,10 +23,10 @@ import (
 
 var (
 	versionFlag = flag.Bool("version", false, "print program version")
-	debugFlag   = flag.Bool("debug", false, "print debug logs")
+	debugFlag   = flag.Bool("debug", false, "enable debug logs")
 	configFlag  = flag.String("config", "", "path of config file")
-	username    = flag.String("username", "", "putio account username")
-	password    = flag.String("password", "", "putio account password")
+	username    = flag.String("username", "", "put.io account username")
+	password    = flag.String("password", "", "put.io account password")
 )
 
 var (
