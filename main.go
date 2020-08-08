@@ -11,6 +11,12 @@ import (
 	"go.etcd.io/bbolt"
 )
 
+// TODO Reconsiliation tests
+// TODO CI setup
+// TODO release setup
+// TODO Daemon mode
+// TODO HTTP API
+
 const Version = "0.0.1"
 
 var (
