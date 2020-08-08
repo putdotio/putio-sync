@@ -28,8 +28,8 @@ putio-sync -username <username> -password <password>
 ```
 
 Then program is going to sync the contents of these folders:
-- **$HOME/putio-sync** folder in your computer
-- **/putio-sync** folder in your Put.io account
+- **$HOME/putio-sync** in your computer
+- **/putio-sync** in your Put.io account
 
 The folders are created if they don't exist.
 The program exists after sync.
