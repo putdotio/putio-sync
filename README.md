@@ -15,4 +15,4 @@ brew tap putdotio/putio-sync
 brew install putio-sync
 ```
 
-Otherwise, get the latest binary from [releases page](https://github.com/putdotio/rain/releases).
+Otherwise, get the latest binary from [releases page](https://github.com/putdotio/putio-sync/releases).
