@@ -3,6 +3,8 @@ putio-sync
 
 Command-line program to sync a folder between put.io and your computer.
 
+**WARNING: The project is still in development and features are subject to change!**
+
 [![Build Status](https://travis-ci.org/putdotio/putio-sync.svg?branch=v2)](https://travis-ci.org/putdotio/putio-sync)
 [![GitHub Release](https://img.shields.io/github/release/putdotio/putio-sync.svg)](https://github.com/putdotio/putio-sync/releases)
 
