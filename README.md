@@ -16,3 +16,19 @@ brew install putio-sync
 ```
 
 Otherwise, get the latest binary from [releases page](https://github.com/putdotio/putio-sync/releases).
+
+Usage
+-----
+
+Run the program with your account credentials:
+```sh
+putio-sync -username <username> -password <password>
+```
+
+Then program is going to sync the contents of these folders:
+- `$HOME/putio-sync` folder in your computer
+- `/putio-sync` folder in your Put.io account
+
+The folders are created if they don't exist.
+The program exists after sync.
+You can run it again whenever you want to sync.
