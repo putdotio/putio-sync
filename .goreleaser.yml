@@ -1,5 +1,3 @@
-env:
-  - GO111MODULE=on
 before:
   hooks:
     - go mod download
@@ -33,7 +31,7 @@ changelog:
     - '^docs:'
     - '^test:'
 brews:
-  - github:
+  - tap:
       owner: putdotio
       name: homebrew-putio-sync
     folder: Formula
