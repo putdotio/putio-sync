@@ -2,6 +2,9 @@ package main
 
 import (
 	"fmt"
+	"os"
+
+	"github.com/cenkalti/log"
 )
 
 type Job interface {
@@ -18,7 +21,17 @@ func (j *DeleteState) String() string {
 }
 
 func (j *DeleteState) Run() error {
-	// TODO Delete temp download file
-	// TODO Delete temp upload file
+	if j.state.DownloadTempPath != "" {
+		err := os.Remove(j.state.DownloadTempPath)
+		if err != nil {
+			log.Errorln("cannot remove temp download file:", err.Error())
+		}
+	}
+	if j.state.UploadURL != "" {
+		err := TerminateUpload(token, j.state.UploadURL)
+		if err != nil {
+			log.Errorln("cannot remove upload:", err.Error())
+		}
+	}
 	return j.state.Delete()
 }

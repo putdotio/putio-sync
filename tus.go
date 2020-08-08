@@ -94,6 +94,28 @@ func GetUploadOffset(token string, location string) (n int64, err error) {
 	return n, err
 }
 
+func TerminateUpload(token string, location string) (err error) {
+	log.Debugf("Terminating upload %q", location)
+	req, err := http.NewRequestWithContext(context.TODO(), http.MethodDelete, location, nil)
+	if err != nil {
+		return
+	}
+
+	req.Header.Set("Authorization", "token "+token)
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return
+	}
+	defer resp.Body.Close()
+
+	log.Debugln("Status code:", resp.StatusCode)
+	if resp.StatusCode != http.StatusNoContent {
+		err = fmt.Errorf("unexpected status: %d", resp.StatusCode)
+		return
+	}
+	return nil
+}
+
 func encodeMetadata(metadata map[string]string) string {
 	encoded := make([]string, 0, len(metadata))
 	for k, v := range metadata {
