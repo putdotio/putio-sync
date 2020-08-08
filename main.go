@@ -12,8 +12,6 @@ import (
 )
 
 // TODO Reconsiliation tests
-// TODO CI setup
-// TODO release setup
 // TODO Daemon mode
 // TODO HTTP API
 
