@@ -23,7 +23,7 @@ const (
 )
 
 func authenticate() error {
-	log.Infoln("Authenticating as user:", config.Username)
+	log.Infof("Authenticating as user: %q", config.Username)
 	hostname, err := os.Hostname()
 	if err != nil {
 		log.Fatal(err)
@@ -65,8 +65,9 @@ func authenticate() error {
 		return fmt.Errorf("json decode error: %v", err)
 	}
 
-	token := &oauth2.Token{AccessToken: tokenResponse.AccessToken}
-	tokenSource := oauth2.StaticTokenSource(token)
+	token = tokenResponse.AccessToken
+	oauthToken := &oauth2.Token{AccessToken: token}
+	tokenSource := oauth2.StaticTokenSource(oauthToken)
 	oauthClient := oauth2.NewClient(context.Background(), tokenSource)
 	client = putio.NewClient(oauthClient)
 	return nil

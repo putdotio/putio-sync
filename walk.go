@@ -53,6 +53,7 @@ type RemoteWalker struct{}
 func (RemoteWalker) Walk(walkFn WalkFunc) error {
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
+	// TODO list remote files sorted by datetime asc, this will make sure that latest uploaded version is always the most recent
 	dir, err := client.Files.Get(ctx, remoteFolderID)
 	if err != nil {
 		return err

@@ -25,10 +25,15 @@ var (
 	configPath     string
 	config         Config
 	db             *bbolt.DB
+	token          string
 	client         *putio.Client
 	localPath      string
 	remoteFolderID int64
-	jobs           []Job
+	dirCache       = NewDirCache()
+)
+
+var (
+	bucketFiles = []byte("files")
 )
 
 func main() {
@@ -49,7 +54,7 @@ func main() {
 			log.Fatal(err)
 		}
 	}
-	log.Infoln("Using config file:", configPath)
+	log.Infof("Using config file %q", configPath)
 	if err := config.Read(); err != nil {
 		log.Fatal(err)
 	}
@@ -66,8 +71,15 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Infoln("Using database file:", dbPath)
+	log.Infof("Using database file %q", dbPath)
 	db, err = bbolt.Open(dbPath, 0600, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = db.Update(func(tx *bbolt.Tx) error {
+		_, err := tx.CreateBucketIfNotExists(bucketFiles)
+		return err
+	})
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -75,7 +87,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	err = ensureFolders()
+	err = ensureRoots()
 	if err != nil {
 		log.Fatal(err)
 	}

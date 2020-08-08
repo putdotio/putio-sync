@@ -1,45 +1,34 @@
 package main
 
 import (
-	"context"
+	"fmt"
 	"os"
 	"path/filepath"
-
-	"github.com/putdotio/go-putio"
 )
 
-func ensureFolders() error {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return err
-	}
-	localPath = filepath.Join(home, folderName)
-	err = os.MkdirAll(localPath, 0750)
-	if err != nil {
-		return err
-	}
-	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
-	defer cancel()
-	folders, _, err := client.Files.List(ctx, 0)
-	if err != nil {
-		return err
-	}
-	found := false
-	var f putio.File
-	for _, f = range folders {
-		if f.IsDir() && f.Name == folderName {
-			found = true
-			break
-		}
-	}
-	if !found {
-		ctx, cancel = context.WithTimeout(context.Background(), defaultTimeout)
-		defer cancel()
-		f, err = client.Files.CreateFolder(ctx, folderName, 0)
-		if err != nil {
-			return err
-		}
-	}
-	remoteFolderID = f.ID
-	return nil
+type CreateLocalFolder struct {
+	relpath string
+	state   *State
+}
+
+func (j *CreateLocalFolder) String() string {
+	return "Creating local folder " + j.relpath
+}
+
+func (j *CreateLocalFolder) Run() error {
+	return os.MkdirAll(filepath.Join(localPath, filepath.FromSlash(j.relpath)), 0777)
+}
+
+type CreateRemoteFolder struct {
+	relpath string
+	state   *State
+}
+
+func (j *CreateRemoteFolder) String() string {
+	return fmt.Sprintf("Creating remote folder %q", j.relpath)
+}
+
+func (j *CreateRemoteFolder) Run() error {
+	_, err := dirCache.Mkdirp(j.relpath)
+	return err
 }
