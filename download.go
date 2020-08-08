@@ -126,7 +126,6 @@ func (d *Download) openRemote(offset int64) (rc io.ReadCloser, err error) {
 	if err != nil {
 		return
 	}
-	// TODO retry failed operations
 	req, err := http.NewRequestWithContext(context.TODO(), http.MethodGet, u, nil)
 	if err != nil {
 		return
