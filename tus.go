@@ -48,7 +48,7 @@ func CreateUpload(ctx context.Context, token string, filename string, parentID, 
 
 func SendFile(token string, r io.Reader, location string, offset int64) (fileID int64, err error) {
 	log.Debugf("Sending file %q offset=%d", location, offset)
-	req, err := http.NewRequest(http.MethodPatch, location, r)
+	req, err := http.NewRequestWithContext(context.TODO(), http.MethodPatch, location, r)
 	if err != nil {
 		return
 	}
@@ -57,7 +57,6 @@ func SendFile(token string, r io.Reader, location string, offset int64) (fileID 
 	req.Header.Set("upload-offset", strconv.FormatInt(offset, 10))
 	req.Header.Set("Authorization", "token "+token)
 	resp, err := http.DefaultClient.Do(req)
-
 	if err != nil {
 		return
 	}
@@ -73,7 +72,7 @@ func SendFile(token string, r io.Reader, location string, offset int64) (fileID 
 
 func GetUploadOffset(token string, location string) (n int64, err error) {
 	log.Debugf("Getting upload offset %q", location)
-	req, err := http.NewRequest(http.MethodHead, location, nil)
+	req, err := http.NewRequestWithContext(context.TODO(), http.MethodHead, location, nil)
 	if err != nil {
 		return
 	}
@@ -96,7 +95,7 @@ func GetUploadOffset(token string, location string) (n int64, err error) {
 }
 
 func encodeMetadata(metadata map[string]string) string {
-	var encoded []string
+	encoded := make([]string, 0, len(metadata))
 	for k, v := range metadata {
 		encoded = append(encoded, fmt.Sprintf("%s %s", k, base64.StdEncoding.EncodeToString([]byte(v))))
 	}

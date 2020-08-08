@@ -36,13 +36,13 @@ func (f *SyncFile) String() string {
 func GroupFiles(states []State, localFiles, remoteFiles []File) map[string]*SyncFile {
 	m := make(map[string]*SyncFile)
 	initSyncFile := func(relpath string) *SyncFile {
-		if sf, ok := m[relpath]; ok {
-			return sf
-		} else {
-			sf := &SyncFile{relpath: relpath}
-			m[relpath] = sf
+		sf, ok := m[relpath]
+		if ok {
 			return sf
 		}
+		sf = &SyncFile{relpath: relpath}
+		m[relpath] = sf
+		return sf
 	}
 	for _, f := range localFiles {
 		lf := f.(*LocalFile)

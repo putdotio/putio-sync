@@ -9,7 +9,7 @@ import (
 
 type File interface {
 	Info() os.FileInfo
-	// RelPath is for comparing with local/remote path. Path seperator must be slash.
+	// RelPath is for comparing with local/remote path. Path separator must be slash.
 	RelPath() string
 }
 

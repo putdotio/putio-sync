@@ -1,0 +1,22 @@
+linters:
+  enable-all: true
+  disable:
+    - maligned
+    - lll
+    - gochecknoglobals
+    - gochecknoinits
+    - gocyclo
+    - nakedret
+    - funlen
+    - wsl
+    - gocognit
+    - gomnd
+    - godox
+    - goerr113
+    - nlreturn
+issues:
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - goconst
+        - errcheck

@@ -82,21 +82,9 @@ func (d *Download) Run() error {
 			return err
 		}
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
-	defer cancel()
-	u, err := client.Files.URL(ctx, d.remoteFile.putioFile.ID, true)
-	if err != nil {
-		return err
-	}
 	// TODO do not use default http client
 	// TODO use proper timeouts on client
 	// TODO retry failed operations
-	resp, err := http.Get(u)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
 	rc, err := d.openRemote(d.state.Offset)
 	if err != nil {
 		return err
@@ -149,7 +137,8 @@ func (d *Download) openRemote(offset int64) (rc io.ReadCloser, err error) {
 		return
 	}
 	req.Header.Set("range", fmt.Sprintf("bytes=%d-", offset))
-	resp, err := http.Get(u)
+	// TODO remove nolint directives
+	resp, err := http.Get(u) // nolint: gosec,bodyclose,noctx
 	if err != nil {
 		return
 	}

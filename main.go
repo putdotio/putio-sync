@@ -17,8 +17,6 @@ import (
 // TODO Daemon mode
 // TODO HTTP API
 
-const Version = "0.0.1"
-
 var (
 	versionFlag = flag.Bool("version", false, "print program version")
 	debugFlag   = flag.Bool("debug", false, "print debug logs")
@@ -38,9 +36,7 @@ var (
 	dirCache       = NewDirCache()
 )
 
-var (
-	bucketFiles = []byte("files")
-)
+var bucketFiles = []byte("files")
 
 func main() {
 	flag.Parse()

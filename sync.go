@@ -32,10 +32,7 @@ func sync() error {
 		}
 	}
 	syncFiles := GroupFiles(states, localFiles, remoteFiles)
-	jobs, err := Reconciliation(syncFiles)
-	if err != nil {
-		return err
-	}
+	jobs := Reconciliation(syncFiles)
 	// Print jobs for debugging
 	for _, job := range jobs {
 		log.Debugln("Job:", job.String())

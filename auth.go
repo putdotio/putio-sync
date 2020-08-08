@@ -16,9 +16,9 @@ import (
 )
 
 const (
-	tokenURL       = "https://api.put.io/v2/oauth2/authorizations/clients/"
+	tokenURL       = "https://api.put.io/v2/oauth2/authorizations/clients/" // nolint: gosec
 	clientID       = "4785"
-	clientSecret   = "YGRIVM3BKAPGTYCR7PEC"
+	clientSecret   = "YGRIVM3BKAPGTYCR7PEC" // nolint: gosec
 	defaultTimeout = 10 * time.Second
 )
 

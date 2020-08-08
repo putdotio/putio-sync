@@ -6,10 +6,10 @@ import (
 	"github.com/cenkalti/log"
 )
 
-// Reconciliation funciton does not perform any operation.
+// Reconciliation function does not perform any operation.
 // It only takes the filesystem state as input and returns operations to be performed on those fileystems.
 // It must be testable without side effects.
-func Reconciliation(syncFiles map[string]*SyncFile) ([]Job, error) {
+func Reconciliation(syncFiles map[string]*SyncFile) []Job {
 	var jobs []Job
 	files := SortSyncFiles(syncFiles)
 	for _, sf := range files {
@@ -53,11 +53,11 @@ func Reconciliation(syncFiles map[string]*SyncFile) ([]Job, error) {
 			})
 		}
 	}
-	return jobs, nil
+	return jobs
 }
 
 func SortSyncFiles(m map[string]*SyncFile) []*SyncFile {
-	var a []*SyncFile
+	a := make([]*SyncFile, 0, len(m))
 	for _, sf := range m {
 		a = append(a, sf)
 	}
