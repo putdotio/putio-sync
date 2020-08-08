@@ -38,7 +38,7 @@ func authenticate() error {
 	}
 	req.SetBasicAuth(config.Username, config.Password)
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -68,7 +68,8 @@ func authenticate() error {
 	token = tokenResponse.AccessToken
 	oauthToken := &oauth2.Token{AccessToken: token}
 	tokenSource := oauth2.StaticTokenSource(oauthToken)
-	oauthClient := oauth2.NewClient(context.Background(), tokenSource)
+	ctx = context.WithValue(context.TODO(), oauth2.HTTPClient, httpClient)
+	oauthClient := oauth2.NewClient(ctx, tokenSource)
 	client = putio.NewClient(oauthClient)
 	return nil
 }

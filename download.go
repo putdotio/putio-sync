@@ -82,9 +82,6 @@ func (d *Download) Run() error {
 			return err
 		}
 	}
-	// TODO do not use default http client
-	// TODO use proper timeouts on client
-	// TODO retry failed operations
 	rc, err := d.openRemote(d.state.Offset)
 	if err != nil {
 		return err
@@ -129,16 +126,14 @@ func (d *Download) openRemote(offset int64) (rc io.ReadCloser, err error) {
 	if err != nil {
 		return
 	}
-	// TODO do not use default http client
-	// TODO use proper timeouts on client
 	// TODO retry failed operations
-	req, err := http.NewRequest(http.MethodGet, u, nil)
+	req, err := http.NewRequestWithContext(context.TODO(), http.MethodGet, u, nil)
 	if err != nil {
 		return
 	}
 	req.Header.Set("range", fmt.Sprintf("bytes=%d-", offset))
 	// TODO remove nolint directives
-	resp, err := http.Get(u) // nolint: gosec,bodyclose,noctx
+	resp, err := httpClient.Do(req) // nolint: bodyclose
 	if err != nil {
 		return
 	}

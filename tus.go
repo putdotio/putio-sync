@@ -31,7 +31,7 @@ func CreateUpload(ctx context.Context, token string, filename string, parentID, 
 	req.Header.Set("Upload-Metadata", encodeMetadata(metadata))
 	req.Header.Set("Authorization", "token "+token)
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return
 	}
@@ -56,7 +56,7 @@ func SendFile(token string, r io.Reader, location string, offset int64) (fileID 
 	req.Header.Set("content-type", "application/offset+octet-stream")
 	req.Header.Set("upload-offset", strconv.FormatInt(offset, 10))
 	req.Header.Set("Authorization", "token "+token)
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return
 	}
@@ -78,7 +78,7 @@ func GetUploadOffset(token string, location string) (n int64, err error) {
 	}
 
 	req.Header.Set("Authorization", "token "+token)
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return
 	}
@@ -102,7 +102,7 @@ func TerminateUpload(token string, location string) (err error) {
 	}
 
 	req.Header.Set("Authorization", "token "+token)
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return
 	}
