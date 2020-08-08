@@ -33,7 +33,7 @@ func (f *SyncFile) String() string {
 	return fmt.Sprintf("%s %s", string(flags), f.relpath)
 }
 
-func GroupFiles(states []State, localFiles, remoteFiles []File) map[string]*SyncFile {
+func GroupFiles(states []State, localFiles []*LocalFile, remoteFiles []*RemoteFile) map[string]*SyncFile {
 	m := make(map[string]*SyncFile)
 	initSyncFile := func(relpath string) *SyncFile {
 		sf, ok := m[relpath]
@@ -44,13 +44,11 @@ func GroupFiles(states []State, localFiles, remoteFiles []File) map[string]*Sync
 		m[relpath] = sf
 		return sf
 	}
-	for _, f := range localFiles {
-		lf := f.(*LocalFile)
+	for _, lf := range localFiles {
 		sf := initSyncFile(lf.relpath)
 		sf.local = lf
 	}
-	for _, f := range remoteFiles {
-		rf := f.(*RemoteFile)
+	for _, rf := range remoteFiles {
 		sf := initSyncFile(rf.relpath)
 		sf.remote = rf
 	}

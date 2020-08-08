@@ -91,7 +91,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	err = sync()
+	err = syncRoots()
 	if err != nil {
 		log.Fatal(err)
 	}
