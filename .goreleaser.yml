@@ -11,11 +11,14 @@ builds:
     - darwin
     - windows
     goarch:
+    - "386"
     - amd64
 archives:
   - format: tar.gz
-    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}"
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
     replacements:
+      386: i386
+      amd64: x86_64
       darwin: macos
     format_overrides:
       - goos: windows
