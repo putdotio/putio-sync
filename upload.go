@@ -49,6 +49,10 @@ func (d *Upload) resume() bool {
 func (d *Upload) Run() error {
 	ok := d.resume()
 	if !ok {
+		inode, err := GetInode(d.localFile.info)
+		if err != nil {
+			return err
+		}
 		dir, filename := path.Split(d.localFile.RelPath())
 		parentID, err := dirCache.Mkdirp(dir)
 		if err != nil {
@@ -59,8 +63,9 @@ func (d *Upload) Run() error {
 			return err
 		}
 		d.state = &State{
-			Status:    StatusUploading,
-			UploadURL: location,
+			Status:     StatusUploading,
+			LocalInode: inode,
+			UploadURL:  location,
 			Snapshot: &Snapshot{
 				Size:    d.localFile.info.Size(),
 				ModTime: d.localFile.info.ModTime(),

@@ -17,6 +17,7 @@ const (
 
 type State struct {
 	Status           Status
+	LocalInode       uint64
 	RemoteID         int64
 	DownloadTempPath string
 	UploadURL        string

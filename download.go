@@ -107,12 +107,21 @@ func (d *Download) Run() error {
 		return err
 	}
 
-	err = os.Rename(d.state.DownloadTempPath, filepath.Join(localPath, filepath.FromSlash(d.state.relpath)))
+	// TODO set modtime of localfile
+
+	newPath := filepath.Join(localPath, filepath.FromSlash(d.state.relpath))
+	err = os.Rename(d.state.DownloadTempPath, newPath)
+	if err != nil {
+		return err
+	}
+
+	inode, err := GetInodePath(newPath)
 	if err != nil {
 		return err
 	}
 
 	d.state.Status = StatusSynced
+	d.state.LocalInode = inode
 	err = d.state.Write()
 	if err != nil {
 		return err
