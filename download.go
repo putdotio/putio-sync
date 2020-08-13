@@ -60,6 +60,8 @@ func (d *Download) resume() io.WriteCloser {
 func (d *Download) Run() error {
 	wc := d.resume()
 	if wc == nil {
+		// TODO use temp dir inside local root
+		// TODO ignore local temp dir from reconciliation
 		f, err := ioutil.TempFile("", "putio-sync-")
 		if err != nil {
 			return err
