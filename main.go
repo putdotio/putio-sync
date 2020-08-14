@@ -90,7 +90,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	err = syncOnce(context.TODO())
+	err = syncOnce(context.Background())
 	if err != nil {
 		log.Fatal(err)
 	}
