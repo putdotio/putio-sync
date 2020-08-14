@@ -8,7 +8,7 @@ import (
 	"github.com/putdotio/go-putio"
 )
 
-func ensureRoots() error {
+func ensureRoots(baseCtx context.Context) error {
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return err
@@ -18,7 +18,7 @@ func ensureRoots() error {
 	if err != nil {
 		return err
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
+	ctx, cancel := context.WithTimeout(baseCtx, defaultTimeout)
 	defer cancel()
 	folders, _, err := client.Files.List(ctx, 0)
 	if err != nil {
@@ -33,7 +33,7 @@ func ensureRoots() error {
 		}
 	}
 	if !found {
-		ctx, cancel = context.WithTimeout(context.Background(), defaultTimeout)
+		ctx, cancel = context.WithTimeout(baseCtx, defaultTimeout)
 		defer cancel()
 		f, err = client.Files.CreateFolder(ctx, folderName, 0)
 		if err != nil {

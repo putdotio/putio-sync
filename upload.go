@@ -18,7 +18,7 @@ func (d *Upload) String() string {
 	return fmt.Sprintf("Uploading %q", d.localFile.RelPath())
 }
 
-func (d *Upload) resume() bool {
+func (d *Upload) tryResume() bool {
 	if d.state == nil {
 		return false
 	}
@@ -36,18 +36,15 @@ func (d *Upload) resume() bool {
 	if offset > d.localFile.info.Size() {
 		return false
 	}
-	if d.state.Snapshot.ModTime != d.localFile.info.ModTime() {
-		return false
-	}
-	if d.state.Snapshot.Size != d.localFile.info.Size() {
+	if d.state.Size != d.localFile.info.Size() {
 		return false
 	}
 	// TODO maybe check for CRC32
 	return true
 }
 
-func (d *Upload) Run() error {
-	ok := d.resume()
+func (d *Upload) Run(ctx context.Context) error {
+	ok := d.tryResume()
 	if !ok {
 		inode, err := GetInode(d.localFile.info)
 		if err != nil {
@@ -66,11 +63,8 @@ func (d *Upload) Run() error {
 			Status:     StatusUploading,
 			LocalInode: inode,
 			UploadURL:  location,
-			Snapshot: &Snapshot{
-				Size:    d.localFile.info.Size(),
-				ModTime: d.localFile.info.ModTime(),
-				// TODO maybe save and check inode number for local files
-			},
+			Size:       d.localFile.info.Size(),
+			// TODO maybe save and check inode number for local files
 			relpath: d.localFile.relpath,
 		}
 		err = d.state.Write()
@@ -91,6 +85,7 @@ func (d *Upload) Run() error {
 	if err != nil {
 		return err
 	}
+	// TODO save CRC32 of uploaded file
 	d.state.Status = StatusSynced
 	d.state.RemoteID = fileID
 	err = d.state.Write()

@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"time"
 
 	"go.etcd.io/bbolt"
 )
@@ -15,23 +14,18 @@ const (
 	StatusUploading   = "uploading"
 )
 
+// State stores information about syncing files and folders.
 type State struct {
 	Status           Status
+	IsDir            bool
 	LocalInode       uint64
 	RemoteID         int64
 	DownloadTempPath string
 	UploadURL        string
 	Offset           int64
-	// Snapshot represents the final state of the file.
-	// It is set after the sync decision and direction is made.
-	Snapshot *Snapshot
-	relpath  string
-}
-
-type Snapshot struct {
-	ModTime time.Time
-	Size    int64
-	CRC32   string
+	Size             int64
+	CRC32            string
+	relpath          string
 }
 
 func ReadAllStates() ([]State, error) {
@@ -68,4 +62,26 @@ func (s State) Delete() error {
 		b := tx.Bucket(bucketFiles)
 		return b.Delete([]byte(s.relpath))
 	})
+}
+
+// Move writes the state to database while changing the relpath key.
+// Move also deletes the record at old relpath.
+func (s *State) Move(target string) error {
+	err := db.Update(func(tx *bbolt.Tx) error {
+		b := tx.Bucket(bucketFiles)
+		err := b.Delete([]byte(s.relpath))
+		if err != nil {
+			return err
+		}
+		val, err := json.Marshal(s)
+		if err != nil {
+			return err
+		}
+		return b.Put([]byte(target), val)
+	})
+	if err != nil {
+		return err
+	}
+	s.relpath = target
+	return nil
 }

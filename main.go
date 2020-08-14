@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"path/filepath"
@@ -89,17 +90,21 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	err = authenticate()
-	if err != nil {
-		log.Fatal(err)
-	}
-	err = ensureRoots()
-	if err != nil {
-		log.Fatal(err)
-	}
-	err = syncRoots()
+	err = syncOnce(context.TODO())
 	if err != nil {
 		log.Fatal(err)
 	}
 	log.Infoln("Sync finished")
+}
+
+func syncOnce(ctx context.Context) error {
+	err := authenticate(ctx)
+	if err != nil {
+		return err
+	}
+	err = ensureRoots(ctx)
+	if err != nil {
+		return err
+	}
+	return syncRoots(ctx)
 }

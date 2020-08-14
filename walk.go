@@ -18,11 +18,16 @@ type Walker interface {
 
 type WalkFunc func(file File, err error) error
 
-func WalkOnFolder(walker Walker) ([]File, error) {
+func WalkOnFolder(ctx context.Context, walker Walker) ([]File, error) {
 	var l []File
 	fn := func(file File, err error) error {
 		if err != nil {
 			return err
+		}
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
 		}
 		if file.RelPath() == "." {
 			return nil

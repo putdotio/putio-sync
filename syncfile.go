@@ -9,19 +9,21 @@ type SyncFile struct {
 	remote  *RemoteFile
 	state   *State
 	relpath string
+	skip    bool
 }
 
 func (f *SyncFile) String() string {
-	flags := []byte("....")
+	flags := []byte("...")
 	if f.state != nil {
-		if f.state.Snapshot != nil {
-			flags[0] = 'S'
-		}
 		switch f.state.Status {
+		case StatusSynced:
+			flags[0] = 'S'
 		case StatusDownloading:
-			flags[3] = 'D'
+			flags[0] = 'D'
 		case StatusUploading:
-			flags[3] = 'U'
+			flags[0] = 'U'
+		default:
+			flags[0] = '?'
 		}
 	}
 	if f.local != nil {

@@ -19,7 +19,7 @@ func (d *Download) String() string {
 	return fmt.Sprintf("Downloading %q", d.remoteFile.RelPath())
 }
 
-func (d *Download) resume() io.WriteCloser {
+func (d *Download) tryResume() io.WriteCloser {
 	if d.state == nil {
 		return nil
 	}
@@ -45,20 +45,17 @@ func (d *Download) resume() io.WriteCloser {
 	if n < d.state.Offset {
 		return nil
 	}
-	if d.state.Snapshot.ModTime != d.remoteFile.putioFile.UpdatedAt.Time {
+	if d.state.Size != d.remoteFile.putioFile.Size {
 		return nil
 	}
-	if d.state.Snapshot.Size != d.remoteFile.putioFile.Size {
-		return nil
-	}
-	if d.state.Snapshot.CRC32 != d.remoteFile.putioFile.CRC32 {
+	if d.state.CRC32 != d.remoteFile.putioFile.CRC32 {
 		return nil
 	}
 	return f
 }
 
-func (d *Download) Run() error {
-	wc := d.resume()
+func (d *Download) Run(ctx context.Context) error {
+	wc := d.tryResume()
 	if wc == nil {
 		// TODO use temp dir inside local root
 		// TODO ignore local temp dir from reconciliation
@@ -72,12 +69,9 @@ func (d *Download) Run() error {
 			Status:           StatusDownloading,
 			RemoteID:         d.remoteFile.putioFile.ID,
 			DownloadTempPath: f.Name(),
-			Snapshot: &Snapshot{
-				Size:    d.remoteFile.putioFile.Size,
-				ModTime: d.remoteFile.putioFile.UpdatedAt.Time,
-				CRC32:   d.remoteFile.putioFile.CRC32,
-			},
-			relpath: d.remoteFile.relpath,
+			Size:             d.remoteFile.putioFile.Size,
+			CRC32:            d.remoteFile.putioFile.CRC32,
+			relpath:          d.remoteFile.relpath,
 		}
 		err = d.state.Write()
 		if err != nil {

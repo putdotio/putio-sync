@@ -22,7 +22,7 @@ const (
 	defaultTimeout = 10 * time.Second
 )
 
-func authenticate() error {
+func authenticate(ctx context.Context) error {
 	log.Infof("Authenticating as user: %q", config.Username)
 	hostname, err := os.Hostname()
 	if err != nil {
@@ -30,7 +30,7 @@ func authenticate() error {
 	}
 	fingerprint := url.PathEscape(hostname)
 	clientName := url.QueryEscape(hostname)
-	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
+	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
 	defer cancel()
 	req, err := http.NewRequestWithContext(ctx, "PUT", tokenURL+clientID+"/"+fingerprint+"?client_secret="+clientSecret+"&client_name="+clientName, nil)
 	if err != nil {
