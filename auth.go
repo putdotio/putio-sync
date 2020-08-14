@@ -22,7 +22,7 @@ const (
 	defaultTimeout = 10 * time.Second
 )
 
-func authenticate(ctx context.Context) error {
+func authenticate(baseCtx context.Context) error {
 	log.Infof("Authenticating as user: %q", config.Username)
 	hostname, err := os.Hostname()
 	if err != nil {
@@ -30,7 +30,7 @@ func authenticate(ctx context.Context) error {
 	}
 	fingerprint := url.PathEscape(hostname)
 	clientName := url.QueryEscape(hostname)
-	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
+	ctx, cancel := context.WithTimeout(baseCtx, defaultTimeout)
 	defer cancel()
 	req, err := http.NewRequestWithContext(ctx, "PUT", tokenURL+clientID+"/"+fingerprint+"?client_secret="+clientSecret+"&client_name="+clientName, nil)
 	if err != nil {
@@ -68,7 +68,7 @@ func authenticate(ctx context.Context) error {
 	token = tokenResponse.AccessToken
 	oauthToken := &oauth2.Token{AccessToken: token}
 	tokenSource := oauth2.StaticTokenSource(oauthToken)
-	ctx = context.WithValue(context.TODO(), oauth2.HTTPClient, httpClient)
+	ctx = context.WithValue(baseCtx, oauth2.HTTPClient, httpClient)
 	oauthClient := oauth2.NewClient(ctx, tokenSource)
 	client = putio.NewClient(oauthClient)
 	return nil
