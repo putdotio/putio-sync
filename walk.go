@@ -6,6 +6,7 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"sort"
 
 	"github.com/putdotio/go-putio"
 )
@@ -58,7 +59,6 @@ type RemoteWalker struct{}
 func (RemoteWalker) Walk(walkFn WalkFunc) error {
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
-	// TODO list remote files sorted by datetime asc, this will make sure that latest uploaded version is always the most recent
 	dir, err := client.Files.Get(ctx, remoteFolderID)
 	if err != nil {
 		return err
@@ -77,6 +77,10 @@ func walk(relpath string, parent putio.File, walkFn WalkFunc) error {
 	if err != nil {
 		return err
 	}
+	// List remote files sorted by ID ascending, this will make sure that latest uploaded version is always the most recent
+	sort.Slice(children, func(i, j int) bool {
+		return children[i].ID < children[j].ID
+	})
 	for _, child := range children {
 		if !child.IsDir() {
 			err = walkFn(NewRemoteFile(child, path.Join(relpath, child.Name)), nil)
