@@ -46,7 +46,7 @@ func CreateUpload(ctx context.Context, token string, filename string, parentID, 
 	return
 }
 
-func SendFile(token string, r io.Reader, location string, offset int64) (fileID int64, err error) {
+func SendFile(token string, r io.Reader, location string, offset int64) (fileID int64, crc32 string, err error) {
 	log.Debugf("Sending file %q offset=%d", location, offset)
 	req, err := http.NewRequestWithContext(context.TODO(), http.MethodPatch, location, r)
 	if err != nil {
@@ -67,7 +67,13 @@ func SendFile(token string, r io.Reader, location string, offset int64) (fileID 
 		err = fmt.Errorf("unexpected status: %d", resp.StatusCode)
 		return
 	}
-	return strconv.ParseInt(resp.Header.Get("putio-file-id"), 10, 64)
+	fileID, err = strconv.ParseInt(resp.Header.Get("putio-file-id"), 10, 64)
+	if err != nil {
+		err = fmt.Errorf("cannot parse putio-file-id header: %w", err)
+		return
+	}
+	crc32 = resp.Header.Get("putio-file-crc32")
+	return
 }
 
 func GetUploadOffset(token string, location string) (n int64, err error) {

@@ -128,29 +128,22 @@ func syncWithState(sf *SyncFile,
 			// This is the hottest case that is executed most because once all files are in sync no operations will be done later.
 			return nil
 		case sf.local != nil && sf.remote == nil:
-			println(1)
 			// File missing in remote side, could be deleted or moved elsewhere
 			rf, ok := remoteFilesByID[sf.state.RemoteID]
 			if ok { // nolint: nestif
-				println(2)
 				// File with the same id is found on another path
 				target, ok := syncFiles[rf.relpath]
 				if !ok || target.state == nil {
-					println(3)
 					// There is no existing state in move target
 					if rf.putioFile.CRC32 == sf.state.CRC32 {
-						println(4)
 						// Remote file is not changed
 						inode, _ := GetInode(sf.local.info)
 						if inode == sf.state.LocalInode {
-							println(5)
 							// Local file is not changed too
 							// Then, file must be moved. We can move the local file to same path.
 							if target != nil {
-								println(6)
 								target.skip = true
 							}
-							println(7)
 							return []Job{&MoveLocalFile{
 								localFile: *sf.local,
 								toRelpath: rf.relpath,

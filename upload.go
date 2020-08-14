@@ -81,13 +81,13 @@ func (d *Upload) Run(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	fileID, err := SendFile(token, of, d.state.UploadURL, d.state.Offset)
+	fileID, crc32, err := SendFile(token, of, d.state.UploadURL, d.state.Offset)
 	if err != nil {
 		return err
 	}
-	// TODO save CRC32 of uploaded file
 	d.state.Status = StatusSynced
 	d.state.RemoteID = fileID
+	d.state.CRC32 = crc32
 	err = d.state.Write()
 	if err != nil {
 		return err
