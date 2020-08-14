@@ -59,7 +59,7 @@ func (j *MoveRemoteFile) String() string {
 
 func (j *MoveRemoteFile) Run(ctx context.Context) error {
 	dir := path.Dir(j.toRelpath)
-	parentID, err := dirCache.Mkdirp(dir)
+	parentID, err := dirCache.Mkdirp(ctx, dir)
 	if err != nil {
 		return err
 	}

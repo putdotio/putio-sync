@@ -40,7 +40,7 @@ func (j *CreateRemoteFolder) String() string {
 }
 
 func (j *CreateRemoteFolder) Run(ctx context.Context) error {
-	remoteID, err := dirCache.Mkdirp(j.relpath)
+	remoteID, err := dirCache.Mkdirp(ctx, j.relpath)
 	if err != nil {
 		return err
 	}

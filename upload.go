@@ -51,7 +51,7 @@ func (d *Upload) Run(ctx context.Context) error {
 			return err
 		}
 		dir, filename := path.Split(d.localFile.RelPath())
-		parentID, err := dirCache.Mkdirp(dir)
+		parentID, err := dirCache.Mkdirp(ctx, dir)
 		if err != nil {
 			return err
 		}

@@ -30,7 +30,7 @@ func (c *DirCache) Set(relpath string, id int64) {
 	c.m[relpath] = id
 }
 
-func (c *DirCache) Mkdirp(relpath string) (int64, error) {
+func (c *DirCache) Mkdirp(ctx context.Context, relpath string) (int64, error) {
 	relpath = strings.TrimRight(relpath, "/")
 	log.Debugln("DirCache.Mkdirp", relpath)
 	if relpath == "." || relpath == "" {
@@ -40,12 +40,14 @@ func (c *DirCache) Mkdirp(relpath string) (int64, error) {
 		return id, nil
 	}
 	dir, base := path.Split(relpath)
-	dirID, err := c.Mkdirp(dir)
+	dirID, err := c.Mkdirp(ctx, dir)
 	if err != nil {
 		return 0, err
 	}
 	log.Debugf("DirCache.Mkdirp Creating remote folder %q", relpath)
-	f, err := client.Files.CreateFolder(context.TODO(), base, dirID)
+	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
+	defer cancel()
+	f, err := client.Files.CreateFolder(ctx, base, dirID)
 	if err != nil {
 		return 0, err
 	}
