@@ -42,11 +42,13 @@ func WalkOnFolder(ctx context.Context, walker Walker) ([]File, error) {
 	return l, walker.Walk(fn)
 }
 
-type LocalWalker struct{}
+type LocalWalker struct {
+	root string
+}
 
-func (LocalWalker) Walk(walkFn WalkFunc) error {
-	return filepath.Walk(localPath, func(path string, info os.FileInfo, err error) error {
-		relpath, err2 := filepath.Rel(localPath, path)
+func (w LocalWalker) Walk(walkFn WalkFunc) error {
+	return filepath.Walk(w.root, func(path string, info os.FileInfo, err error) error {
+		relpath, err2 := filepath.Rel(w.root, path)
 		if err2 != nil {
 			panic(err2)
 		}
@@ -54,12 +56,14 @@ func (LocalWalker) Walk(walkFn WalkFunc) error {
 	})
 }
 
-type RemoteWalker struct{}
+type RemoteWalker struct {
+	root int64
+}
 
-func (RemoteWalker) Walk(walkFn WalkFunc) error {
+func (w RemoteWalker) Walk(walkFn WalkFunc) error {
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
-	dir, err := client.Files.Get(ctx, remoteFolderID)
+	dir, err := client.Files.Get(ctx, w.root)
 	if err != nil {
 		return err
 	}

@@ -17,7 +17,22 @@ func (j *DeleteLocalFile) String() string {
 }
 
 func (j *DeleteLocalFile) Run(ctx context.Context) error {
-	err := os.Remove(filepath.Join(localPath, filepath.FromSlash(j.localFile.relpath)))
+	var err error
+	removePath := filepath.Join(localPath, filepath.FromSlash(j.localFile.relpath))
+	if j.localFile.info.IsDir() {
+		// TODO Check if dir is empty before delete
+		// var files []File
+		// files, err = WalkOnFolder(ctx, LocalWalker{root: removePath})
+		// if err != nil {
+		// 	return err
+		// }
+		// if len(files) > 0 {
+		// 	return errors.New("folder not empty: " + removePath)
+		// }
+		err = os.RemoveAll(removePath)
+	} else {
+		err = os.Remove(removePath)
+	}
 	if os.IsNotExist(err) {
 		err = nil
 	}

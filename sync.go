@@ -60,8 +60,8 @@ func walkParallel(ctx context.Context) ([]*LocalFile, []*RemoteFile, error) {
 	remoteFilesC := make(chan []File, 1)
 	errC := make(chan error, 2)
 	wg.Add(2)
-	go walkAsync(ctx, &wg, LocalWalker{}, "local", localFilesC, errC)
-	go walkAsync(ctx, &wg, RemoteWalker{}, "remote", remoteFilesC, errC)
+	go walkAsync(ctx, &wg, LocalWalker{root: localPath}, "local", localFilesC, errC)
+	go walkAsync(ctx, &wg, RemoteWalker{root: remoteFolderID}, "remote", remoteFilesC, errC)
 	wg.Wait()
 	select {
 	case err := <-errC:
