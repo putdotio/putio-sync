@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"sync"
 
 	"github.com/cenkalti/log"
 )
@@ -59,40 +58,44 @@ func syncRoots(ctx context.Context) error {
 	return nil
 }
 
-func walkParallel(ctx context.Context) ([]*LocalFile, []*RemoteFile, error) {
-	var wg sync.WaitGroup
+func walkParallel(baseCtx context.Context) (localFiles []*LocalFile, remoteFiles []*RemoteFile, err error) {
 	localFilesC := make(chan []File, 1)
 	remoteFilesC := make(chan []File, 1)
 	errC := make(chan error, 2)
-	wg.Add(2)
-	go walkAsync(ctx, &wg, LocalWalker{root: localPath}, "local", localFilesC, errC)
-	go walkAsync(ctx, &wg, RemoteWalker{root: remoteFolderID}, "remote", remoteFilesC, errC)
-	wg.Wait()
-	select {
-	case err := <-errC:
-		// TODO cancel ongoing walk operation on first error
-		return nil, nil, err
-	default:
+	ctx, cancel := context.WithCancel(baseCtx)
+	defer cancel()
+	go walkAsync(ctx, LocalWalker{root: localPath}, localFilesC, errC)
+	go walkAsync(ctx, RemoteWalker{root: remoteFolderID}, remoteFilesC, errC)
+	for {
+		if localFiles != nil && remoteFiles != nil {
+			return localFiles, remoteFiles, nil
+		}
+		select {
+		case files := <-localFilesC:
+			log.Info("Fetched local filesystem tree")
+			localFiles = make([]*LocalFile, 0, len(files))
+			for _, f := range files {
+				localFiles = append(localFiles, f.(*LocalFile))
+			}
+		case files := <-remoteFilesC:
+			log.Info("Fetched remote filesystem tree")
+			remoteFiles = make([]*RemoteFile, 0, len(files))
+			for _, f := range files {
+				remoteFiles = append(remoteFiles, f.(*RemoteFile))
+			}
+		case err = <-errC:
+			// Cancel ongoing walk operation on first error
+			cancel()
+			return
+		}
 	}
-	files := <-localFilesC
-	localFiles := make([]*LocalFile, 0, len(files))
-	for _, f := range files {
-		localFiles = append(localFiles, f.(*LocalFile))
-	}
-	files = <-remoteFilesC
-	remoteFiles := make([]*RemoteFile, 0, len(files))
-	for _, f := range files {
-		remoteFiles = append(remoteFiles, f.(*RemoteFile))
-	}
-	return localFiles, remoteFiles, nil
 }
 
-func walkAsync(ctx context.Context, wg *sync.WaitGroup, walker Walker, side string, filesC chan []File, errC chan error) {
+func walkAsync(ctx context.Context, walker Walker, filesC chan []File, errC chan error) {
 	files, err := WalkOnFolder(ctx, walker)
 	if err != nil {
 		errC <- err
+		return
 	}
-	log.Infof("Fetched %s filesystem tree", side)
 	filesC <- files
-	wg.Done()
 }
