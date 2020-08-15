@@ -14,13 +14,14 @@ import (
 
 const UploadURL = "https://upload.put.io/files/"
 
-func CreateUpload(ctx context.Context, token string, filename string, parentID, length int64) (location string, err error) {
+func CreateUpload(baseCtx context.Context, token string, filename string, parentID, length int64) (location string, err error) {
 	log.Debugf("Creating upload %q at parent=%d", filename, parentID)
-	req, err := http.NewRequest(http.MethodPost, UploadURL, nil)
+	ctx, cancel := context.WithTimeout(baseCtx, defaultTimeout)
+	defer cancel()
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, UploadURL, nil)
 	if err != nil {
 		return
 	}
-	req = req.WithContext(ctx)
 	metadata := map[string]string{
 		"name":       filename,
 		"parent_id":  strconv.FormatInt(parentID, 10),

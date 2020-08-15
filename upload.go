@@ -55,7 +55,7 @@ func (d *Upload) Run(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-		location, err := CreateUpload(context.TODO(), token, filename, parentID, d.localFile.info.Size())
+		location, err := CreateUpload(ctx, token, filename, parentID, d.localFile.info.Size())
 		if err != nil {
 			return err
 		}
