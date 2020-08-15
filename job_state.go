@@ -25,7 +25,7 @@ func (j *DeleteState) Run(ctx context.Context) error {
 		}
 	}
 	if j.state.UploadURL != "" {
-		err := TerminateUpload(token, j.state.UploadURL)
+		err := TerminateUpload(ctx, token, j.state.UploadURL)
 		if err != nil {
 			log.Errorln("cannot remove upload:", err.Error())
 		}

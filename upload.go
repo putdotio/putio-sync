@@ -18,7 +18,7 @@ func (d *Upload) String() string {
 	return fmt.Sprintf("Uploading %q", d.localFile.RelPath())
 }
 
-func (d *Upload) tryResume() bool {
+func (d *Upload) tryResume(ctx context.Context) bool {
 	if d.state == nil {
 		return false
 	}
@@ -35,7 +35,7 @@ func (d *Upload) tryResume() bool {
 	if d.state.LocalInode != inode {
 		return false
 	}
-	offset, err := GetUploadOffset(token, d.state.UploadURL)
+	offset, err := GetUploadOffset(ctx, token, d.state.UploadURL)
 	if err != nil {
 		return false
 	}
@@ -44,7 +44,7 @@ func (d *Upload) tryResume() bool {
 }
 
 func (d *Upload) Run(ctx context.Context) error {
-	ok := d.tryResume()
+	ok := d.tryResume(ctx)
 	if !ok {
 		inode, err := GetInode(d.localFile.info)
 		if err != nil {
@@ -80,7 +80,7 @@ func (d *Upload) Run(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	fileID, crc32, err := SendFile(token, of, d.state.UploadURL, d.state.Offset)
+	fileID, crc32, err := SendFile(ctx, token, of, d.state.UploadURL, d.state.Offset)
 	if err != nil {
 		return err
 	}

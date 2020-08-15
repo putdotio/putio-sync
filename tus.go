@@ -47,9 +47,9 @@ func CreateUpload(baseCtx context.Context, token string, filename string, parent
 	return
 }
 
-func SendFile(token string, r io.Reader, location string, offset int64) (fileID int64, crc32 string, err error) {
+func SendFile(ctx context.Context, token string, r io.Reader, location string, offset int64) (fileID int64, crc32 string, err error) {
 	log.Debugf("Sending file %q offset=%d", location, offset)
-	req, err := http.NewRequestWithContext(context.TODO(), http.MethodPatch, location, r)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPatch, location, r)
 	if err != nil {
 		return
 	}
@@ -77,9 +77,11 @@ func SendFile(token string, r io.Reader, location string, offset int64) (fileID 
 	return
 }
 
-func GetUploadOffset(token string, location string) (n int64, err error) {
+func GetUploadOffset(ctx context.Context, token string, location string) (n int64, err error) {
 	log.Debugf("Getting upload offset %q", location)
-	req, err := http.NewRequestWithContext(context.TODO(), http.MethodHead, location, nil)
+	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
+	defer cancel()
+	req, err := http.NewRequestWithContext(ctx, http.MethodHead, location, nil)
 	if err != nil {
 		return
 	}
@@ -101,9 +103,11 @@ func GetUploadOffset(token string, location string) (n int64, err error) {
 	return n, err
 }
 
-func TerminateUpload(token string, location string) (err error) {
+func TerminateUpload(ctx context.Context, token string, location string) (err error) {
 	log.Debugf("Terminating upload %q", location)
-	req, err := http.NewRequestWithContext(context.TODO(), http.MethodDelete, location, nil)
+	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
+	defer cancel()
+	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, location, nil)
 	if err != nil {
 		return
 	}
