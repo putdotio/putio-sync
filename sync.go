@@ -48,11 +48,12 @@ func syncRoots(ctx context.Context) error {
 	}
 	for _, job := range jobs {
 		log.Infoln(job.String())
-		if !*dryrun {
-			err = job.Run(ctx)
-			if err != nil {
-				log.Error(err.Error())
-			}
+		if *dryrun {
+			continue
+		}
+		err = job.Run(ctx)
+		if err != nil {
+			return err
 		}
 	}
 	return nil
