@@ -20,15 +20,14 @@ func Reconciliation(syncFiles map[string]*SyncFile) []Job {
 	}
 
 	// Group files by certain keys for faster lookup
-	// TODO change map values to *SyncFile for less lookup
-	remoteFilesByID := mapRemoteFilesByID(syncFiles)
-	localFilesByInode := mapLocalFilesByInode(syncFiles)
+	filesByRemoteID := mapRemoteFilesByID(syncFiles)
+	filesByInode := mapLocalFilesByInode(syncFiles)
 
 	// First, sync files with known state
 	// This is required for detecting simple move operations correctly.
 	for _, sf := range files {
 		if sf.state != nil {
-			for _, job := range syncWithState(sf, syncFiles, remoteFilesByID, localFilesByInode) {
+			for _, job := range syncWithState(sf, filesByRemoteID, filesByInode) {
 				if job != nil {
 					jobs = append(jobs, job)
 				}
@@ -103,10 +102,7 @@ func syncFresh(sf *SyncFile) Job {
 	}
 }
 
-func syncWithState(sf *SyncFile,
-	syncFiles map[string]*SyncFile,
-	remoteFilesByID map[int64]*RemoteFile,
-	localFilesByInode map[uint64]*LocalFile) []Job {
+func syncWithState(sf *SyncFile, filesByRemoteID map[int64]*SyncFile, filesByInode map[uint64]*SyncFile) []Job {
 	// We have a state from previous sync. Compare local and remote sides with existing state.
 	switch sf.state.Status {
 	case StatusSynced:
@@ -131,24 +127,21 @@ func syncWithState(sf *SyncFile,
 			return nil
 		case sf.local != nil && sf.remote == nil:
 			// File missing in remote side, could be deleted or moved elsewhere
-			rf, ok := remoteFilesByID[sf.state.RemoteID]
+			target, ok := filesByRemoteID[sf.state.RemoteID]
 			if ok { // nolint: nestif
 				// File with the same id is found on another path
-				target, ok := syncFiles[rf.relpath]
-				if !ok || target.state == nil {
+				if target.state == nil {
 					// There is no existing state in move target
-					if rf.putioFile.CRC32 == sf.state.CRC32 {
+					if target.remote.putioFile.CRC32 == sf.state.CRC32 {
 						// Remote file is not changed
 						inode, _ := GetInode(sf.local.info)
 						if inode == sf.state.LocalInode {
 							// Local file is not changed too
 							// Then, file must be moved. We can move the local file to same path.
-							if target != nil {
-								target.skip = true
-							}
+							target.skip = true
 							return []Job{&MoveLocalFile{
 								localFile: *sf.local,
-								toRelpath: rf.relpath,
+								toRelpath: target.relpath,
 								state:     *sf.state,
 							}}
 						}
@@ -162,23 +155,20 @@ func syncWithState(sf *SyncFile,
 			}}
 		case sf.local == nil && sf.remote != nil:
 			// File missing in local side, could be deleted or moved elsewhere
-			lf, ok := localFilesByInode[sf.state.LocalInode]
+			target, ok := filesByInode[sf.state.LocalInode]
 			if ok { // nolint: nestif
 				// File with same inode is found on another path
-				target, ok := syncFiles[lf.relpath]
-				if !ok || target.state == nil {
+				if target.state == nil {
 					if sf.remote.putioFile.CRC32 == sf.state.CRC32 {
 						// Remote file is not changed
-						inode, _ := GetInode(lf.info)
+						inode, _ := GetInode(target.local.info)
 						if inode == sf.state.LocalInode {
 							// Local file is not changed too
 							// Then, file must be moved. We can move the remote file to same path.
-							if target != nil {
-								target.skip = true
-							}
+							target.skip = true
 							return []Job{&MoveRemoteFile{
 								remoteFile: *sf.remote,
-								toRelpath:  lf.relpath,
+								toRelpath:  target.relpath,
 								state:      *sf.state,
 							}}
 						}
@@ -267,18 +257,18 @@ func isChildOf(child, parent string) bool {
 	return strings.HasPrefix(child, parent+"/")
 }
 
-func mapRemoteFilesByID(syncFiles map[string]*SyncFile) map[int64]*RemoteFile {
-	m := make(map[int64]*RemoteFile, len(syncFiles))
+func mapRemoteFilesByID(syncFiles map[string]*SyncFile) map[int64]*SyncFile {
+	m := make(map[int64]*SyncFile, len(syncFiles))
 	for _, sf := range syncFiles {
 		if sf.remote != nil {
-			m[sf.remote.putioFile.ID] = sf.remote
+			m[sf.remote.putioFile.ID] = sf
 		}
 	}
 	return m
 }
 
-func mapLocalFilesByInode(syncFiles map[string]*SyncFile) map[uint64]*LocalFile {
-	m := make(map[uint64]*LocalFile, len(syncFiles))
+func mapLocalFilesByInode(syncFiles map[string]*SyncFile) map[uint64]*SyncFile {
+	m := make(map[uint64]*SyncFile, len(syncFiles))
 	for _, sf := range syncFiles {
 		if sf.local != nil {
 			inode, err := GetInode(sf.local.info)
@@ -286,7 +276,7 @@ func mapLocalFilesByInode(syncFiles map[string]*SyncFile) map[uint64]*LocalFile 
 				log.Error(err)
 				continue
 			}
-			m[inode] = sf.local
+			m[inode] = sf
 		}
 	}
 	return m
