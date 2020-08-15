@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/cenkalti/log"
 )
@@ -49,6 +50,14 @@ func CreateUpload(baseCtx context.Context, token string, filename string, parent
 
 func SendFile(ctx context.Context, token string, r io.Reader, location string, offset int64) (fileID int64, crc32 string, err error) {
 	log.Debugf("Sending file %q offset=%d", location, offset)
+
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	// Stop upload if speed is too slow.
+	// Wrap reader so each read call resets the timer that cancels the request on certain duration.
+	r = &TimerResetReader{r: r, timer: time.AfterFunc(defaultTimeout, cancel)}
+
 	req, err := http.NewRequestWithContext(ctx, http.MethodPatch, location, r)
 	if err != nil {
 		return
@@ -62,8 +71,6 @@ func SendFile(ctx context.Context, token string, r io.Reader, location string, o
 		return
 	}
 	defer resp.Body.Close()
-
-	// TODO fail upload if stuck
 
 	log.Debugln("Status code:", resp.StatusCode)
 	if resp.StatusCode != http.StatusNoContent {
@@ -135,4 +142,14 @@ func encodeMetadata(metadata map[string]string) string {
 		encoded = append(encoded, fmt.Sprintf("%s %s", k, base64.StdEncoding.EncodeToString([]byte(v))))
 	}
 	return strings.Join(encoded, ",")
+}
+
+type TimerResetReader struct {
+	r     io.Reader
+	timer *time.Timer
+}
+
+func (r *TimerResetReader) Read(p []byte) (int, error) {
+	r.timer.Reset(defaultTimeout)
+	return r.r.Read(p)
 }
