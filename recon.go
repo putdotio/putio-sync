@@ -90,7 +90,6 @@ func syncFresh(sf *SyncFile) Job {
 			return nil
 		default:
 			// Assume files are same if they are in same size
-			// TODO check crc32 for local file
 			return &WriteFileState{
 				localFile:  *sf.local,
 				remoteFile: *sf.remote,
