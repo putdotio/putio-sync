@@ -28,19 +28,19 @@ func (d *Upload) tryResume() bool {
 	if d.state.UploadURL == "" {
 		return false
 	}
+	if d.state.Size != d.localFile.info.Size() {
+		return false
+	}
+	inode, _ := GetInode(d.localFile.info)
+	if d.state.LocalInode != inode {
+		return false
+	}
 	offset, err := GetUploadOffset(token, d.state.UploadURL)
 	if err != nil {
 		return false
 	}
 	d.state.Offset = offset
-	if offset > d.localFile.info.Size() {
-		return false
-	}
-	if d.state.Size != d.localFile.info.Size() {
-		return false
-	}
-	// TODO maybe check for CRC32
-	return true
+	return offset <= d.localFile.info.Size()
 }
 
 func (d *Upload) Run(ctx context.Context) error {
