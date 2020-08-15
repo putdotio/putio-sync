@@ -29,6 +29,10 @@ func (j *MoveLocalFile) Run(ctx context.Context) error {
 	if exists {
 		return errors.New("file already exists at move target")
 	}
+	err = os.MkdirAll(filepath.Dir(newPath), 0777)
+	if err != nil {
+		return err
+	}
 	err = os.Rename(oldPath, newPath)
 	if err != nil {
 		return err

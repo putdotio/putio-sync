@@ -14,7 +14,7 @@ func ensureRoots(baseCtx context.Context) error {
 		return err
 	}
 	localPath = filepath.Join(home, folderName)
-	err = os.MkdirAll(localPath, 0750)
+	err = os.MkdirAll(localPath, 0777)
 	if err != nil {
 		return err
 	}
