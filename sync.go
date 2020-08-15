@@ -44,11 +44,16 @@ func syncRoots(ctx context.Context) error {
 	dirCache.Debug()
 
 	// Run all jobs one by one
+	if *dryrun {
+		log.Noticeln("Command run in dry-run mode. No changes will be made.")
+	}
 	for _, job := range jobs {
 		log.Infoln(job.String())
-		err = job.Run(ctx)
-		if err != nil {
-			log.Error(err.Error())
+		if !*dryrun {
+			err = job.Run(ctx)
+			if err != nil {
+				log.Error(err.Error())
+			}
 		}
 	}
 	return nil

@@ -28,6 +28,7 @@ var (
 	configFlag  = flag.String("config", "", "path of config file")
 	username    = flag.String("username", "", "put.io account username")
 	password    = flag.String("password", "", "put.io account password")
+	dryrun      = flag.Bool("dryrun", false, "do not make changes on filesystems")
 )
 
 var (
