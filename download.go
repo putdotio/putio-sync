@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"time"
 )
 
 type Download struct {
@@ -84,16 +85,22 @@ func (d *Download) Run(ctx context.Context) error {
 			return err
 		}
 	}
+
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
 	rc, err := d.openRemote(ctx, d.state.Offset)
 	if err != nil {
 		return err
 	}
 	defer rc.Close()
 
-	// TODO fail download if download stream is stuck
+	// Stop download if download speed is too slow.
+	// Timer for cancelling the context will be reset after each successful read from stream.
+	trw := &TimerResetWriter{timer: time.AfterFunc(defaultTimeout, cancel)}
+	tr := io.TeeReader(rc, trw)
 
 	remaining := d.state.Size - d.state.Offset
-	n, copyErr := io.CopyN(wc, rc, remaining)
+	n, copyErr := io.CopyN(wc, tr, remaining)
 
 	err = wc.Close()
 	if err != nil {
@@ -150,4 +157,13 @@ func (d *Download) openRemote(baseCtx context.Context, offset int64) (rc io.Read
 	}
 	rc = resp.Body
 	return
+}
+
+type TimerResetWriter struct {
+	timer *time.Timer
+}
+
+func (w *TimerResetWriter) Write(p []byte) (int, error) {
+	w.timer.Reset(defaultTimeout)
+	return len(p), nil
 }
