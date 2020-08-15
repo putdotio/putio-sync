@@ -64,8 +64,7 @@ func (d *Upload) Run(ctx context.Context) error {
 			LocalInode: inode,
 			UploadURL:  location,
 			Size:       d.localFile.info.Size(),
-			// TODO maybe save and check inode number for local files
-			relpath: d.localFile.relpath,
+			relpath:    d.localFile.relpath,
 		}
 		err = d.state.Write()
 		if err != nil {
