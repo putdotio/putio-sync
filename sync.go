@@ -65,6 +65,7 @@ func walkParallel(ctx context.Context) ([]*LocalFile, []*RemoteFile, error) {
 	wg.Wait()
 	select {
 	case err := <-errC:
+		// TODO cancel ongoing walk operation on first error
 		return nil, nil, err
 	default:
 	}

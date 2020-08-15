@@ -20,6 +20,7 @@ func Reconciliation(syncFiles map[string]*SyncFile) []Job {
 	}
 
 	// Group files by certain keys for faster lookup
+	// TODO change map values to *SyncFile for less lookup
 	remoteFilesByID := mapRemoteFilesByID(syncFiles)
 	localFilesByInode := mapLocalFilesByInode(syncFiles)
 
