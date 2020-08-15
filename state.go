@@ -20,7 +20,7 @@ type State struct {
 	IsDir            bool
 	LocalInode       uint64
 	RemoteID         int64
-	DownloadTempPath string
+	DownloadTempName string
 	UploadURL        string
 	Offset           int64
 	Size             int64

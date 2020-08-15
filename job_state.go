@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/cenkalti/log"
 )
@@ -17,8 +18,8 @@ func (j *DeleteState) String() string {
 }
 
 func (j *DeleteState) Run(ctx context.Context) error {
-	if j.state.DownloadTempPath != "" {
-		err := os.Remove(j.state.DownloadTempPath)
+	if j.state.DownloadTempName != "" {
+		err := os.Remove(filepath.Join(localPath, tempDirName, j.state.DownloadTempName))
 		if err != nil {
 			log.Errorln("cannot remove temp download file:", err.Error())
 		}

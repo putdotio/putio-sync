@@ -26,10 +26,10 @@ func (d *Download) tryResume() io.WriteCloser {
 	if d.state.Status != StatusDownloading {
 		return nil
 	}
-	if d.state.DownloadTempPath == "" {
+	if d.state.DownloadTempName == "" {
 		return nil
 	}
-	f, err := os.OpenFile(d.state.DownloadTempPath, os.O_WRONLY, 0)
+	f, err := os.OpenFile(filepath.Join(localPath, tempDirName, d.state.DownloadTempName), os.O_WRONLY, 0)
 	if err != nil {
 		return nil
 	}
@@ -38,6 +38,12 @@ func (d *Download) tryResume() io.WriteCloser {
 			f.Close()
 		}
 	}()
+	if d.state.Size != d.remoteFile.putioFile.Size {
+		return nil
+	}
+	if d.state.CRC32 != d.remoteFile.putioFile.CRC32 {
+		return nil
+	}
 	n, err := f.Seek(0, io.SeekEnd)
 	if err != nil {
 		return nil
@@ -45,10 +51,8 @@ func (d *Download) tryResume() io.WriteCloser {
 	if n < d.state.Offset {
 		return nil
 	}
-	if d.state.Size != d.remoteFile.putioFile.Size {
-		return nil
-	}
-	if d.state.CRC32 != d.remoteFile.putioFile.CRC32 {
+	_, err = f.Seek(d.state.Offset, io.SeekStart)
+	if err != nil {
 		return nil
 	}
 	return f
@@ -57,9 +61,11 @@ func (d *Download) tryResume() io.WriteCloser {
 func (d *Download) Run(ctx context.Context) error {
 	wc := d.tryResume()
 	if wc == nil {
-		// TODO use temp dir inside local root
-		// TODO ignore local temp dir from reconciliation
-		f, err := ioutil.TempFile("", "putio-sync-")
+		tmpdir, err := TempDir()
+		if err != nil {
+			return err
+		}
+		f, err := ioutil.TempFile(tmpdir, "download-")
 		if err != nil {
 			return err
 		}
@@ -68,7 +74,7 @@ func (d *Download) Run(ctx context.Context) error {
 		d.state = &State{
 			Status:           StatusDownloading,
 			RemoteID:         d.remoteFile.putioFile.ID,
-			DownloadTempPath: f.Name(),
+			DownloadTempName: filepath.Base(f.Name()),
 			Size:             d.remoteFile.putioFile.Size,
 			CRC32:            d.remoteFile.putioFile.CRC32,
 			relpath:          d.remoteFile.relpath,
@@ -78,13 +84,16 @@ func (d *Download) Run(ctx context.Context) error {
 			return err
 		}
 	}
-	rc, err := d.openRemote(d.state.Offset)
+	rc, err := d.openRemote(ctx, d.state.Offset)
 	if err != nil {
 		return err
 	}
 	defer rc.Close()
 
-	n, copyErr := io.Copy(wc, rc)
+	// TODO fail download if download stream is stuck
+
+	remaining := d.state.Size - d.state.Offset
+	n, copyErr := io.CopyN(wc, rc, remaining)
 
 	err = wc.Close()
 	if err != nil {
@@ -98,13 +107,12 @@ func (d *Download) Run(ctx context.Context) error {
 	}
 
 	if copyErr != nil {
-		return err
+		return copyErr
 	}
 
-	// TODO set modtime of localfile
-
+	oldPath := filepath.Join(localPath, tempDirName, d.state.DownloadTempName)
 	newPath := filepath.Join(localPath, filepath.FromSlash(d.state.relpath))
-	err = os.Rename(d.state.DownloadTempPath, newPath)
+	err = os.Rename(oldPath, newPath)
 	if err != nil {
 		return err
 	}
@@ -116,29 +124,28 @@ func (d *Download) Run(ctx context.Context) error {
 
 	d.state.Status = StatusSynced
 	d.state.LocalInode = inode
-	err = d.state.Write()
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return d.state.Write()
 }
 
-func (d *Download) openRemote(offset int64) (rc io.ReadCloser, err error) {
-	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
+func (d *Download) openRemote(baseCtx context.Context, offset int64) (rc io.ReadCloser, err error) {
+	ctx, cancel := context.WithTimeout(baseCtx, defaultTimeout)
 	defer cancel()
 	u, err := client.Files.URL(ctx, d.remoteFile.putioFile.ID, true)
 	if err != nil {
 		return
 	}
-	req, err := http.NewRequestWithContext(context.TODO(), http.MethodGet, u, nil)
+	req, err := http.NewRequestWithContext(baseCtx, http.MethodGet, u, nil)
 	if err != nil {
 		return
 	}
 	req.Header.Set("range", fmt.Sprintf("bytes=%d-", offset))
-	// TODO remove nolint directives
-	resp, err := httpClient.Do(req) // nolint: bodyclose
+	resp, err := httpClient.Do(req)
 	if err != nil {
+		return
+	}
+	if resp.StatusCode != 206 {
+		resp.Body.Close()
+		err = fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 		return
 	}
 	rc = resp.Body

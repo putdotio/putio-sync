@@ -44,7 +44,11 @@ func syncRoots(ctx context.Context) error {
 
 	// Run all jobs one by one
 	if *dryrun {
-		log.Noticeln("Command run in dry-run mode. No changes will be made.")
+		log.Noticeln("Command run in dry-run mode, no changes will be made")
+	}
+	if len(jobs) == 0 {
+		log.Infoln("No changes detected")
+		return nil
 	}
 	for _, job := range jobs {
 		log.Infoln(job.String())

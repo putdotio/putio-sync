@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"sort"
+	"strings"
 
 	"github.com/putdotio/go-putio"
 )
@@ -31,6 +32,9 @@ func WalkOnFolder(ctx context.Context, walker Walker) ([]File, error) {
 		default:
 		}
 		if file.RelPath() == "." {
+			return nil
+		}
+		if strings.HasPrefix(file.RelPath(), tempDirName) {
 			return nil
 		}
 		if ignoredFiles.MatchString(file.Info().Name()) {

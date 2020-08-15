@@ -4,7 +4,10 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"os"
+	"os/signal"
 	"path/filepath"
+	"syscall"
 
 	"github.com/adrg/xdg"
 	"github.com/cenkalti/log"
@@ -91,7 +94,16 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	err = syncOnce(context.Background())
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	ch := make(chan os.Signal, 1)
+	signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM)
+	go func() {
+		sig := <-ch
+		log.Noticef("Received %s. Stopping sync.", sig)
+		cancel()
+	}()
+	err = syncOnce(ctx)
 	if err != nil {
 		log.Fatal(err)
 	}
