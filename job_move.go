@@ -67,14 +67,6 @@ func (j *MoveRemoteFile) Run(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	// TODO check if there is any file at target path
-	// exists, err := j.exists(newPath)
-	// if err != nil {
-	// 	return err
-	// }
-	// if exists {
-	// 	return errors.New("file already exists at move target")
-	// }
 	err = client.Files.Move(ctx, parentID, j.remoteFile.putioFile.ID)
 	if err != nil {
 		return err
