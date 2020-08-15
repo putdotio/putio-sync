@@ -63,6 +63,8 @@ func SendFile(ctx context.Context, token string, r io.Reader, location string, o
 	}
 	defer resp.Body.Close()
 
+	// TODO fail upload if stuck
+
 	log.Debugln("Status code:", resp.StatusCode)
 	if resp.StatusCode != http.StatusNoContent {
 		err = fmt.Errorf("unexpected status: %d", resp.StatusCode)

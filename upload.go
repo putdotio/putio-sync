@@ -71,16 +71,16 @@ func (d *Upload) Run(ctx context.Context) error {
 			return err
 		}
 	}
-	of, err := os.Open(filepath.Join(localPath, filepath.FromSlash(d.localFile.relpath)))
+	f, err := os.Open(filepath.Join(localPath, filepath.FromSlash(d.localFile.relpath)))
 	if err != nil {
 		return err
 	}
-	defer of.Close()
-	_, err = of.Seek(d.state.Offset, io.SeekStart)
+	defer f.Close()
+	_, err = f.Seek(d.state.Offset, io.SeekStart)
 	if err != nil {
 		return err
 	}
-	fileID, crc32, err := SendFile(ctx, token, of, d.state.UploadURL, d.state.Offset)
+	fileID, crc32, err := SendFile(ctx, token, f, d.state.UploadURL, d.state.Offset)
 	if err != nil {
 		return err
 	}
