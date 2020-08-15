@@ -2,6 +2,7 @@ package main
 
 import (
 	"sort"
+	"strings"
 
 	"github.com/cenkalti/log"
 )
@@ -240,15 +241,29 @@ func syncWithState(sf *SyncFile,
 	}
 }
 
+// sortSyncFiles so that folders come after regular files.
+// This is required for correct moving of folders with files inside.
+// First, files are synced, then folder can be moved or deleted.
 func sortSyncFiles(m map[string]*SyncFile) []*SyncFile {
 	a := make([]*SyncFile, 0, len(m))
 	for _, sf := range m {
 		a = append(a, sf)
 	}
 	sort.Slice(a, func(i, j int) bool {
-		return a[i].relpath < a[j].relpath
+		x, y := a[i], a[j]
+		if isChildOf(x.relpath, y.relpath) {
+			return true
+		}
+		if isChildOf(y.relpath, x.relpath) {
+			return false
+		}
+		return x.relpath < y.relpath
 	})
 	return a
+}
+
+func isChildOf(child, parent string) bool {
+	return strings.HasPrefix(child, parent+"/")
 }
 
 func mapRemoteFilesByID(syncFiles map[string]*SyncFile) map[int64]*RemoteFile {
