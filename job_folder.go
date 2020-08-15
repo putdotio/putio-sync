@@ -17,8 +17,7 @@ func (j *CreateLocalFolder) String() string {
 }
 
 func (j *CreateLocalFolder) Run(ctx context.Context) error {
-	dirPath := filepath.Join(localPath, filepath.FromSlash(j.relpath))
-	err := os.MkdirAll(dirPath, 0777)
+	err := os.MkdirAll(filepath.Join(localPath, filepath.FromSlash(j.relpath)), 0777)
 	if err != nil {
 		return err
 	}
