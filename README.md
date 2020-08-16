@@ -13,8 +13,7 @@ Installing
 
 If you are on MacOS you can install from [brew](https://brew.sh/):
 ```sh
-brew tap putdotio/putio-sync
-brew install putio-sync
+brew install putdotio/putio-sync/putio-sync
 ```
 
 Otherwise, get the latest binary from [releases page](https://github.com/putdotio/putio-sync/releases).
