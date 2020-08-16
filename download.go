@@ -8,7 +8,11 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sync/atomic"
 	"time"
+
+	"github.com/cenkalti/log"
+	"github.com/paulbellamy/ratecounter"
 )
 
 type Download struct {
@@ -99,8 +103,11 @@ func (d *Download) Run(ctx context.Context) error {
 	trw := &TimerResetWriter{timer: time.AfterFunc(defaultTimeout, cancel)}
 	tr := io.TeeReader(rc, trw)
 
+	pr := NewProgressReader(tr, d.state.Offset, d.state.Size, d.String())
+	go pr.Run()
 	remaining := d.state.Size - d.state.Offset
-	n, copyErr := io.CopyN(wc, tr, remaining)
+	n, copyErr := io.CopyN(wc, pr, remaining)
+	pr.Close()
 
 	err = wc.Close()
 	if err != nil {
@@ -166,4 +173,49 @@ type TimerResetWriter struct {
 func (w *TimerResetWriter) Write(p []byte) (int, error) {
 	w.timer.Reset(defaultTimeout)
 	return len(p), nil
+}
+
+type ProgressReader struct {
+	r       io.Reader
+	offset  int64
+	size    int64
+	prefix  string
+	counter *ratecounter.RateCounter
+	closeC  chan struct{}
+}
+
+func NewProgressReader(r io.Reader, offset, size int64, prefix string) *ProgressReader {
+	return &ProgressReader{
+		r:       r,
+		offset:  offset,
+		size:    size,
+		prefix:  prefix,
+		counter: ratecounter.NewRateCounter(time.Second),
+		closeC:  make(chan struct{}),
+	}
+}
+
+func (r *ProgressReader) Read(p []byte) (int, error) {
+	n, err := r.r.Read(p)
+	r.counter.Incr(int64(n))
+	atomic.AddInt64(&r.offset, int64(n))
+	return n, err
+}
+
+func (r *ProgressReader) Run() {
+	for {
+		select {
+		case <-time.After(time.Second): // TODO use time.Ticker
+			offset := atomic.LoadInt64(&r.offset)
+			progress := (offset * 100) / r.size
+			speed := r.counter.Rate() / 1024
+			log.Infof("%s %d%% %dKB/s", r.prefix, progress, speed)
+		case <-r.closeC:
+			return
+		}
+	}
+}
+
+func (r *ProgressReader) Close() {
+	close(r.closeC)
 }
