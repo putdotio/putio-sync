@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"syscall"
+	"time"
 
 	"github.com/adrg/xdg"
 	"github.com/cenkalti/log"
@@ -19,8 +20,6 @@ import (
 // "0.0.0" is the development version.
 var Version = "0.0.0"
 
-// TODO Reconciliation tests
-// TODO Daemon mode
 // TODO HTTP API
 
 var (
@@ -30,6 +29,7 @@ var (
 	username    = flag.String("username", "", "put.io account username")
 	password    = flag.String("password", "", "put.io account password")
 	dryrun      = flag.Bool("dryrun", false, "do not make changes on filesystems")
+	repeat      = flag.Duration("repeat", 0, "sync repeatedly, pause given duration between syncs")
 )
 
 var (
@@ -101,11 +101,25 @@ func main() {
 		log.Noticef("Received %s. Stopping sync.", sig)
 		cancel()
 	}()
-	err = syncOnce(ctx)
-	if err != nil {
-		log.Fatal(err)
+	for {
+		err = syncOnce(ctx)
+		if err != nil {
+			if *repeat == 0 {
+				log.Fatal(err)
+			}
+			log.Error(err)
+		} else {
+			log.Infoln("Sync finished successfully")
+		}
+		if *repeat == 0 {
+			break
+		}
+		select {
+		case <-time.After(*repeat):
+		case <-ctx.Done():
+			return
+		}
 	}
-	log.Infoln("Sync finished")
 }
 
 func syncOnce(ctx context.Context) error {
