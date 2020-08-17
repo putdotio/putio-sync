@@ -1,40 +1,39 @@
-package main
+package putiosync
 
 import (
 	"context"
 	"fmt"
 	"os"
-	"path/filepath"
 )
 
-type DeleteLocalFile struct {
-	localFile LocalFile
-	state     State
+type deleteLocalFileJob struct {
+	localFile iLocalFile
+	state     stateType
 }
 
-func (j *DeleteLocalFile) String() string {
+func (j *deleteLocalFileJob) String() string {
 	return fmt.Sprintf("Deleting local file %q", j.state.relpath)
 }
 
-func (j *DeleteLocalFile) Run(ctx context.Context) error {
-	err := os.RemoveAll(filepath.Join(localPath, filepath.FromSlash(j.localFile.relpath)))
+func (j *deleteLocalFileJob) Run(ctx context.Context) error {
+	err := os.RemoveAll(j.localFile.FullPath())
 	if err != nil {
 		return err
 	}
 	return j.state.Delete()
 }
 
-type DeleteRemoteFile struct {
-	remoteFile RemoteFile
-	state      State
+type deleteRemoteFileJob struct {
+	remoteFile iRemoteFile
+	state      stateType
 }
 
-func (j *DeleteRemoteFile) String() string {
+func (j *deleteRemoteFileJob) String() string {
 	return fmt.Sprintf("Deleting remote file %q", j.state.relpath)
 }
 
-func (j *DeleteRemoteFile) Run(ctx context.Context) error {
-	err := client.Files.Delete(ctx, j.remoteFile.putioFile.ID)
+func (j *deleteRemoteFileJob) Run(ctx context.Context) error {
+	err := client.Files.Delete(ctx, j.remoteFile.PutioFile().ID)
 	if err != nil {
 		return err
 	}

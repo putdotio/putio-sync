@@ -1,41 +1,148 @@
-package main
+package putiosync
 
 import (
 	"context"
 	"fmt"
+	"path/filepath"
+	"time"
 
+	"github.com/adrg/xdg"
 	"github.com/cenkalti/log"
+	"github.com/putdotio/go-putio"
+	"github.com/putdotio/putio-sync/internal/auth"
+	"github.com/putdotio/putio-sync/internal/dircache"
+	"github.com/putdotio/putio-sync/internal/tmpdir"
+	"github.com/putdotio/putio-sync/internal/walker"
+	"go.etcd.io/bbolt"
 )
 
-const folderName = "putio-sync"
+const (
+	folderName     = "putio-sync"
+	defaultTimeout = 10 * time.Second
+)
+
+// Variables that used by Sync function.
+var (
+	cfg            Config
+	db             *bbolt.DB
+	token          string
+	client         *putio.Client
+	localPath      string
+	remoteFolderID int64
+	dirCache       *dircache.DirCache
+	tempDirPath    string
+)
+
+func Sync(ctx context.Context, config Config) error {
+	if err := config.validate(); err != nil {
+		return err
+	}
+	dbPath, err := xdg.DataFile(filepath.Join("putio-sync", "sync.db"))
+	if err != nil {
+		return err
+	}
+	log.Infof("Using database file %q", dbPath)
+	db, err = bbolt.Open(dbPath, 0666, nil)
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	cfg = config
+	err = db.Update(func(tx *bbolt.Tx) error {
+		_, err := tx.CreateBucketIfNotExists(bucketFiles)
+		return err
+	})
+	if err != nil {
+		return err
+	}
+	var srv *httpServer
+	if cfg.Server != "" {
+		srv = newServer(cfg.Server)
+		srv.Start()
+		defer srv.Close()
+	}
+
+REPEAT_LOOP:
+	for {
+		err = syncOnce(ctx)
+		if err != nil {
+			if cfg.Repeat == 0 {
+				return err
+			}
+			log.Error(err)
+		} else {
+			log.Infoln("Sync finished successfully")
+		}
+		if cfg.Repeat == 0 {
+			break
+		}
+		select {
+		case <-time.After(cfg.Repeat):
+		case <-ctx.Done():
+			break REPEAT_LOOP
+		}
+	}
+	if srv != nil {
+		if err := srv.Shutdown(); err != nil {
+			return err
+		}
+		log.Debug("Server has shutdown successfully")
+	}
+	return nil
+}
+
+func syncOnce(ctx context.Context) error {
+	var err error
+	token, client, err = auth.Authenticate(ctx, httpClient, defaultTimeout, cfg.Username, cfg.Password)
+	if err != nil {
+		return err
+	}
+	err = ensureRoots(ctx)
+	if err != nil {
+		return err
+	}
+	tempDirPath, err = tmpdir.Create(localPath)
+	if err != nil {
+		return err
+	}
+	dirCache = dircache.New(client, defaultTimeout, remoteFolderID)
+
+	return syncRoots(ctx)
+}
 
 func syncRoots(ctx context.Context) error {
 	remoteURL := fmt.Sprintf("https://put.io/files/%d", remoteFolderID)
 	log.Infof("Syncing %q with %q", remoteURL, localPath)
 
 	// Read previous sync state from db.
-	states, err := ReadAllStates()
+	states, err := readAllStates()
 	if err != nil {
 		return err
 	}
 
 	// Walk on local and remote folders in parallel
-	localFiles, remoteFiles, err := walkParallel(ctx)
+	w := walker.Walker{
+		LocalPath:      localPath,
+		RemoteFolderID: remoteFolderID,
+		TempDirName:    tmpdir.Name,
+		Client:         client,
+		RequestTimeout: defaultTimeout,
+	}
+	localFiles, remoteFiles, err := w.Walk(ctx)
 	if err != nil {
 		return err
 	}
 
 	// Set DirCache entries for existing remote folders
-	dirCache.Clear()
 	for _, rf := range remoteFiles {
-		if rf.putioFile.IsDir() {
-			dirCache.Set(rf.relpath, rf.putioFile.ID)
+		if rf.PutioFile().IsDir() {
+			dirCache.Set(rf.RelPath(), rf.PutioFile().ID)
 		}
 	}
 
 	// Calculate what needs to be done
-	syncFiles := GroupFiles(states, localFiles, remoteFiles)
-	jobs := Reconciliation(syncFiles)
+	syncFiles := groupFiles(states, localFiles, remoteFiles)
+	jobs := reconciliation(syncFiles)
 
 	// Print jobs for debugging
 	for _, job := range jobs {
@@ -44,7 +151,7 @@ func syncRoots(ctx context.Context) error {
 	dirCache.Debug()
 
 	// Run all jobs one by one
-	if *dryrun {
+	if cfg.DryRun {
 		log.Noticeln("Command run in dry-run mode, no changes will be made")
 	}
 	if len(jobs) == 0 {
@@ -53,7 +160,7 @@ func syncRoots(ctx context.Context) error {
 	}
 	for _, job := range jobs {
 		log.Infoln(job.String())
-		if *dryrun {
+		if cfg.DryRun {
 			continue
 		}
 		err = job.Run(ctx)
@@ -62,46 +169,4 @@ func syncRoots(ctx context.Context) error {
 		}
 	}
 	return nil
-}
-
-func walkParallel(baseCtx context.Context) (localFiles []*LocalFile, remoteFiles []*RemoteFile, err error) {
-	localFilesC := make(chan []File, 1)
-	remoteFilesC := make(chan []File, 1)
-	errC := make(chan error, 2)
-	ctx, cancel := context.WithCancel(baseCtx)
-	defer cancel()
-	go walkAsync(ctx, LocalWalker{root: localPath}, localFilesC, errC)
-	go walkAsync(ctx, RemoteWalker{root: remoteFolderID}, remoteFilesC, errC)
-	for {
-		if localFiles != nil && remoteFiles != nil {
-			return localFiles, remoteFiles, nil
-		}
-		select {
-		case files := <-localFilesC:
-			log.Info("Fetched local filesystem tree")
-			localFiles = make([]*LocalFile, 0, len(files))
-			for _, f := range files {
-				localFiles = append(localFiles, f.(*LocalFile))
-			}
-		case files := <-remoteFilesC:
-			log.Info("Fetched remote filesystem tree")
-			remoteFiles = make([]*RemoteFile, 0, len(files))
-			for _, f := range files {
-				remoteFiles = append(remoteFiles, f.(*RemoteFile))
-			}
-		case err = <-errC:
-			// Cancel ongoing walk operation on first error
-			cancel()
-			return
-		}
-	}
-}
-
-func walkAsync(ctx context.Context, walker Walker, filesC chan []File, errC chan error) {
-	files, err := WalkOnFolder(ctx, walker)
-	if err != nil {
-		errC <- err
-		return
-	}
-	filesC <- files
 }

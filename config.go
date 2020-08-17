@@ -1,32 +1,24 @@
-package main
+package putiosync
 
 import (
 	"errors"
-	"os"
-
-	"github.com/BurntSushi/toml"
+	"time"
 )
 
 type Config struct {
+	// Username of put.io account.
 	Username string
+	// Password of put.io account.
 	Password string
+	// Do not make changes on filesystems.
+	DryRun bool
+	// Sync repeatedly. Pause given duration between syncs.
+	Repeat time.Duration
+	// Listen address for HTTP server.
+	Server string
 }
 
-func (c *Config) Read() error {
-	if _, err := toml.DecodeFile(configPath, &config); err != nil {
-		if !os.IsNotExist(err) {
-			return err
-		}
-		if *configFlag != "" {
-			// user specified config must exists
-			// default config may not exist, that's okay
-			return err
-		}
-	}
-	return nil
-}
-
-func (c *Config) Validate() error {
+func (c *Config) validate() error {
 	if c.Username == "" {
 		return errors.New("empty username in config")
 	}

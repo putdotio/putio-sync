@@ -1,4 +1,4 @@
-package main
+package tus
 
 import (
 	"context"
@@ -13,13 +13,15 @@ import (
 	"github.com/cenkalti/log"
 )
 
-const UploadURL = "https://upload.put.io/files/"
+const (
+	uploadURL = "https://upload.put.io/files/"
+)
 
-func CreateUpload(baseCtx context.Context, token string, filename string, parentID, length int64) (location string, err error) {
+func CreateUpload(baseCtx context.Context, httpClient *http.Client, timeout time.Duration, token string, filename string, parentID, length int64) (location string, err error) {
 	log.Debugf("Creating upload %q at parent=%d", filename, parentID)
-	ctx, cancel := context.WithTimeout(baseCtx, defaultTimeout)
+	ctx, cancel := context.WithTimeout(baseCtx, timeout)
 	defer cancel()
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, UploadURL, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, uploadURL, nil)
 	if err != nil {
 		return
 	}
@@ -48,7 +50,7 @@ func CreateUpload(baseCtx context.Context, token string, filename string, parent
 	return
 }
 
-func SendFile(ctx context.Context, token string, r io.Reader, location string, offset int64) (fileID int64, crc32 string, err error) {
+func SendFile(ctx context.Context, httpClient *http.Client, timeout time.Duration, token string, r io.Reader, location string, offset int64) (fileID int64, crc32 string, err error) {
 	log.Debugf("Sending file %q offset=%d", location, offset)
 
 	ctx, cancel := context.WithCancel(ctx)
@@ -56,7 +58,7 @@ func SendFile(ctx context.Context, token string, r io.Reader, location string, o
 
 	// Stop upload if speed is too slow.
 	// Wrap reader so each read call resets the timer that cancels the request on certain duration.
-	r = &TimerResetReader{r: r, timer: time.AfterFunc(defaultTimeout, cancel)}
+	r = &timerResetReader{r: r, timer: time.AfterFunc(timeout, cancel), timeout: timeout}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPatch, location, r)
 	if err != nil {
@@ -86,9 +88,9 @@ func SendFile(ctx context.Context, token string, r io.Reader, location string, o
 	return
 }
 
-func GetUploadOffset(ctx context.Context, token string, location string) (n int64, err error) {
+func GetOffset(ctx context.Context, httpClient *http.Client, timeout time.Duration, token string, location string) (n int64, err error) {
 	log.Debugf("Getting upload offset %q", location)
-	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
+	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 	req, err := http.NewRequestWithContext(ctx, http.MethodHead, location, nil)
 	if err != nil {
@@ -108,13 +110,13 @@ func GetUploadOffset(ctx context.Context, token string, location string) (n int6
 		return
 	}
 	n, err = strconv.ParseInt(resp.Header.Get("upload-offset"), 10, 64)
-	log.Debugln("Upload offset:", n)
+	log.Debugln("uploadJob offset:", n)
 	return n, err
 }
 
-func TerminateUpload(ctx context.Context, token string, location string) (err error) {
+func TerminateuploadJob(ctx context.Context, httpClient *http.Client, timeout time.Duration, token string, location string) (err error) {
 	log.Debugf("Terminating upload %q", location)
-	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
+	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, location, nil)
 	if err != nil {
@@ -144,12 +146,13 @@ func encodeMetadata(metadata map[string]string) string {
 	return strings.Join(encoded, ",")
 }
 
-type TimerResetReader struct {
-	r     io.Reader
-	timer *time.Timer
+type timerResetReader struct {
+	r       io.Reader
+	timer   *time.Timer
+	timeout time.Duration
 }
 
-func (r *TimerResetReader) Read(p []byte) (int, error) {
-	r.timer.Reset(defaultTimeout)
+func (r *timerResetReader) Read(p []byte) (int, error) {
+	r.timer.Reset(r.timeout)
 	return r.r.Read(p)
 }

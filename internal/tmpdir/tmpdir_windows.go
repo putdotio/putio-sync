@@ -1,4 +1,4 @@
-package main
+package tmpdir
 
 import (
 	"os"
@@ -6,10 +6,10 @@ import (
 	"syscall"
 )
 
-const tempDirName = "putio-sync-tmp"
+const Name = "putio-sync-tmp"
 
-func CreateTempDir() (string, error) {
-	filename := filepath.Join(localPath, tempDirName)
+func Create(dir string) (string, error) {
+	filename := filepath.Join(dir, Name)
 	err := os.MkdirAll(filename, 0777)
 	if err != nil {
 		return "", err

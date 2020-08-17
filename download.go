@@ -1,4 +1,4 @@
-package main
+package putiosync
 
 import (
 	"context"
@@ -9,28 +9,31 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/putdotio/putio-sync/internal/inode"
+	"github.com/putdotio/putio-sync/internal/progress"
 )
 
-type Download struct {
-	remoteFile *RemoteFile
-	state      *State
+type downloadJob struct {
+	remoteFile iRemoteFile
+	state      *stateType
 }
 
-func (d *Download) String() string {
+func (d *downloadJob) String() string {
 	return fmt.Sprintf("Downloading %q", d.remoteFile.RelPath())
 }
 
-func (d *Download) tryResume() io.WriteCloser {
+func (d *downloadJob) tryResume() io.WriteCloser {
 	if d.state == nil {
 		return nil
 	}
-	if d.state.Status != StatusDownloading {
+	if d.state.Status != statusDownloading {
 		return nil
 	}
 	if d.state.DownloadTempName == "" {
 		return nil
 	}
-	f, err := os.OpenFile(filepath.Join(localPath, tempDirName, d.state.DownloadTempName), os.O_WRONLY, 0)
+	f, err := os.OpenFile(filepath.Join(tempDirPath, d.state.DownloadTempName), os.O_WRONLY, 0)
 	if err != nil {
 		return nil
 	}
@@ -39,10 +42,10 @@ func (d *Download) tryResume() io.WriteCloser {
 			f.Close()
 		}
 	}()
-	if d.state.Size != d.remoteFile.putioFile.Size {
+	if d.state.Size != d.remoteFile.PutioFile().Size {
 		return nil
 	}
-	if d.state.CRC32 != d.remoteFile.putioFile.CRC32 {
+	if d.state.CRC32 != d.remoteFile.PutioFile().CRC32 {
 		return nil
 	}
 	n, err := f.Seek(0, io.SeekEnd)
@@ -59,26 +62,22 @@ func (d *Download) tryResume() io.WriteCloser {
 	return f
 }
 
-func (d *Download) Run(ctx context.Context) error {
+func (d *downloadJob) Run(ctx context.Context) error {
 	wc := d.tryResume()
 	if wc == nil {
-		tmpdir, err := TempDir()
-		if err != nil {
-			return err
-		}
-		f, err := ioutil.TempFile(tmpdir, "download-")
+		f, err := ioutil.TempFile(tempDirPath, "download-")
 		if err != nil {
 			return err
 		}
 		defer f.Close()
 		wc = f
-		d.state = &State{
-			Status:           StatusDownloading,
-			RemoteID:         d.remoteFile.putioFile.ID,
+		d.state = &stateType{
+			Status:           statusDownloading,
+			RemoteID:         d.remoteFile.PutioFile().ID,
 			DownloadTempName: filepath.Base(f.Name()),
-			Size:             d.remoteFile.putioFile.Size,
-			CRC32:            d.remoteFile.putioFile.CRC32,
-			relpath:          d.remoteFile.relpath,
+			Size:             d.remoteFile.PutioFile().Size,
+			CRC32:            d.remoteFile.PutioFile().CRC32,
+			relpath:          d.remoteFile.RelPath(),
 		}
 		err = d.state.Write()
 		if err != nil {
@@ -96,10 +95,10 @@ func (d *Download) Run(ctx context.Context) error {
 
 	// Stop download if download speed is too slow.
 	// Timer for cancelling the context will be reset after each successful read from stream.
-	trw := &TimerResetWriter{timer: time.AfterFunc(defaultTimeout, cancel)}
+	trw := &timerResetWriter{timer: time.AfterFunc(defaultTimeout, cancel)}
 	tr := io.TeeReader(rc, trw)
 
-	pr := NewProgress(tr, d.state.Offset, d.state.Size, d.String())
+	pr := progress.New(tr, d.state.Offset, d.state.Size, d.String())
 	pr.Start()
 	remaining := d.state.Size - d.state.Offset
 	n, copyErr := io.CopyN(wc, pr, remaining)
@@ -120,27 +119,27 @@ func (d *Download) Run(ctx context.Context) error {
 		return copyErr
 	}
 
-	oldPath := filepath.Join(localPath, tempDirName, d.state.DownloadTempName)
+	oldPath := filepath.Join(tempDirPath, d.state.DownloadTempName)
 	newPath := filepath.Join(localPath, filepath.FromSlash(d.state.relpath))
 	err = os.Rename(oldPath, newPath)
 	if err != nil {
 		return err
 	}
 
-	inode, err := GetInodePath(newPath)
+	in, err := inode.GetPath(newPath)
 	if err != nil {
 		return err
 	}
 
-	d.state.Status = StatusSynced
-	d.state.LocalInode = inode
+	d.state.Status = statusSynced
+	d.state.LocalInode = in
 	return d.state.Write()
 }
 
-func (d *Download) openRemote(baseCtx context.Context, offset int64) (rc io.ReadCloser, err error) {
+func (d *downloadJob) openRemote(baseCtx context.Context, offset int64) (rc io.ReadCloser, err error) {
 	ctx, cancel := context.WithTimeout(baseCtx, defaultTimeout)
 	defer cancel()
-	u, err := client.Files.URL(ctx, d.remoteFile.putioFile.ID, true)
+	u, err := client.Files.URL(ctx, d.remoteFile.PutioFile().ID, true)
 	if err != nil {
 		return
 	}
@@ -153,7 +152,7 @@ func (d *Download) openRemote(baseCtx context.Context, offset int64) (rc io.Read
 	if err != nil {
 		return
 	}
-	if resp.StatusCode != 206 {
+	if resp.StatusCode != http.StatusPartialContent {
 		resp.Body.Close()
 		err = fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 		return
@@ -162,11 +161,11 @@ func (d *Download) openRemote(baseCtx context.Context, offset int64) (rc io.Read
 	return
 }
 
-type TimerResetWriter struct {
+type timerResetWriter struct {
 	timer *time.Timer
 }
 
-func (w *TimerResetWriter) Write(p []byte) (int, error) {
+func (w *timerResetWriter) Write(p []byte) (int, error) {
 	w.timer.Reset(defaultTimeout)
 	return len(p), nil
 }

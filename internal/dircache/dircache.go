@@ -1,21 +1,29 @@
-package main
+package dircache
 
 import (
 	"context"
 	"path"
 	"strings"
+	"time"
 
 	"github.com/cenkalti/log"
+	"github.com/putdotio/go-putio"
 )
 
 // DirCache holds a map for accessing IDs by path.
 type DirCache struct {
-	m map[string]int64
+	client         *putio.Client
+	requestTimeout time.Duration
+	remoteFolderID int64
+	m              map[string]int64
 }
 
-func NewDirCache() *DirCache {
+func New(client *putio.Client, requestTimeout time.Duration, remoteFolderID int64) *DirCache {
 	return &DirCache{
-		m: make(map[string]int64),
+		client:         client,
+		requestTimeout: requestTimeout,
+		remoteFolderID: remoteFolderID,
+		m:              make(map[string]int64),
 	}
 }
 
@@ -38,7 +46,7 @@ func (c *DirCache) Mkdirp(ctx context.Context, relpath string) (int64, error) {
 	relpath = strings.TrimRight(relpath, "/")
 	log.Debugln("DirCache.Mkdirp", relpath)
 	if relpath == "." || relpath == "" {
-		return remoteFolderID, nil
+		return c.remoteFolderID, nil
 	}
 	if id, ok := c.m[relpath]; ok {
 		return id, nil
@@ -49,9 +57,9 @@ func (c *DirCache) Mkdirp(ctx context.Context, relpath string) (int64, error) {
 		return 0, err
 	}
 	log.Debugf("DirCache.Mkdirp Creating remote folder %q", relpath)
-	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
+	ctx, cancel := context.WithTimeout(ctx, c.requestTimeout)
 	defer cancel()
-	f, err := client.Files.CreateFolder(ctx, base, dirID)
+	f, err := c.client.Files.CreateFolder(ctx, base, dirID)
 	if err != nil {
 		return 0, err
 	}

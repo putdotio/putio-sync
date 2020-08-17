@@ -1,4 +1,4 @@
-package main
+package progress
 
 import (
 	"io"
@@ -19,7 +19,7 @@ type Progress struct {
 	ticker  *time.Ticker
 }
 
-func NewProgress(rw io.Reader, offset, size int64, prefix string) *Progress {
+func New(rw io.Reader, offset, size int64, prefix string) *Progress {
 	p := &Progress{
 		offset:  offset,
 		size:    size,
@@ -58,7 +58,7 @@ func (r *Progress) run() {
 	for range r.ticker.C {
 		offset := atomic.LoadInt64(&r.offset)
 		progress := (offset * 100) / r.size
-		speed := r.counter.Rate() / 1024
+		speed := r.counter.Rate() / (1 << 10)
 		log.Infof("%s %d/%d MB (%d%%) %d KB/s", r.prefix, offset/(1<<20), r.size/(1<<20), progress, speed)
 	}
 }

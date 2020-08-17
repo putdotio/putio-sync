@@ -4,7 +4,6 @@ linters:
     - maligned
     - lll
     - gochecknoglobals
-    - gochecknoinits
     - gocyclo
     - nakedret
     - funlen

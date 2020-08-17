@@ -1,4 +1,4 @@
-package main
+package putiosync
 
 import (
 	"context"
@@ -7,25 +7,27 @@ import (
 	"path/filepath"
 
 	"github.com/cenkalti/log"
+	"github.com/putdotio/putio-sync/internal/inode"
+	"github.com/putdotio/putio-sync/internal/tus"
 )
 
-type DeleteState struct {
-	state State
+type deleteStateJob struct {
+	state stateType
 }
 
-func (j *DeleteState) String() string {
+func (j *deleteStateJob) String() string {
 	return fmt.Sprintf("Deleting state %q", j.state.relpath)
 }
 
-func (j *DeleteState) Run(ctx context.Context) error {
+func (j *deleteStateJob) Run(ctx context.Context) error {
 	if j.state.DownloadTempName != "" {
-		err := os.Remove(filepath.Join(localPath, tempDirName, j.state.DownloadTempName))
+		err := os.Remove(filepath.Join(tempDirPath, j.state.DownloadTempName))
 		if err != nil {
 			log.Errorln("cannot remove temp download file:", err.Error())
 		}
 	}
 	if j.state.UploadURL != "" {
-		err := TerminateUpload(ctx, token, j.state.UploadURL)
+		err := tus.TerminateuploadJob(ctx, httpClient, defaultTimeout, token, j.state.UploadURL)
 		if err != nil {
 			log.Errorln("cannot remove upload:", err.Error())
 		}
@@ -33,43 +35,43 @@ func (j *DeleteState) Run(ctx context.Context) error {
 	return j.state.Delete()
 }
 
-type WriteFileState struct {
-	localFile  LocalFile
-	remoteFile RemoteFile
+type writeFileStateJob struct {
+	localFile  iLocalFile
+	remoteFile iRemoteFile
 }
 
-func (j *WriteFileState) String() string {
-	return fmt.Sprintf("Saving file state %q", j.localFile.relpath)
+func (j *writeFileStateJob) String() string {
+	return fmt.Sprintf("Saving file state %q", j.localFile.RelPath())
 }
 
-func (j *WriteFileState) Run(ctx context.Context) error {
-	inode, err := GetInode(j.localFile.info)
+func (j *writeFileStateJob) Run(ctx context.Context) error {
+	in, err := inode.Get(j.localFile.Info())
 	if err != nil {
 		return err
 	}
-	s := State{
-		Status:     StatusSynced,
-		LocalInode: inode,
-		RemoteID:   j.remoteFile.putioFile.ID,
-		Size:       j.remoteFile.putioFile.Size,
-		CRC32:      j.remoteFile.putioFile.CRC32,
-		relpath:    j.remoteFile.relpath,
+	s := stateType{
+		Status:     statusSynced,
+		LocalInode: in,
+		RemoteID:   j.remoteFile.PutioFile().ID,
+		Size:       j.remoteFile.PutioFile().Size,
+		CRC32:      j.remoteFile.PutioFile().CRC32,
+		relpath:    j.remoteFile.RelPath(),
 	}
 	return s.Write()
 }
 
-type WriteDirState struct {
+type writeDirStateJob struct {
 	remoteID int64
 	relpath  string
 }
 
-func (j *WriteDirState) String() string {
+func (j *writeDirStateJob) String() string {
 	return fmt.Sprintf("Saving folder state %q", j.relpath)
 }
 
-func (j *WriteDirState) Run(ctx context.Context) error {
-	s := State{
-		Status:   StatusSynced,
+func (j *writeDirStateJob) Run(ctx context.Context) error {
+	s := stateType{
+		Status:   statusSynced,
 		IsDir:    true,
 		RemoteID: j.remoteID,
 		relpath:  j.relpath,

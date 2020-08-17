@@ -1,15 +1,15 @@
-package main
+package inode
 
 import (
 	"os"
 	"syscall"
 )
 
-func GetInode(fi os.FileInfo) (uint64, error) {
-	return GetInodePath(fi.Name())
+func Get(fi os.FileInfo) (uint64, error) {
+	return GetPath(fi.Name())
 }
 
-func GetInodePath(path string) (uint64, error) {
+func GetPath(path string) (uint64, error) {
 	f, err := os.Open(path)
 	if err != nil {
 		return 0, err

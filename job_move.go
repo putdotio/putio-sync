@@ -1,4 +1,4 @@
-package main
+package putiosync
 
 import (
 	"context"
@@ -12,18 +12,18 @@ import (
 	"strings"
 )
 
-type MoveLocalFile struct {
-	localFile LocalFile
+type moveLocalFileJob struct {
+	localFile iLocalFile
 	toRelpath string
-	state     State
+	state     stateType
 }
 
-func (j *MoveLocalFile) String() string {
+func (j *moveLocalFileJob) String() string {
 	return fmt.Sprintf("Moving local file from %q to %q", j.state.relpath, j.toRelpath)
 }
 
-func (j *MoveLocalFile) Run(ctx context.Context) error {
-	oldPath := filepath.Join(localPath, filepath.FromSlash(j.localFile.relpath))
+func (j *moveLocalFileJob) Run(ctx context.Context) error {
+	oldPath := j.localFile.FullPath()
 	newPath := filepath.Join(localPath, filepath.FromSlash(j.toRelpath))
 	exists, err := j.exists(newPath)
 	if err != nil {
@@ -43,7 +43,7 @@ func (j *MoveLocalFile) Run(ctx context.Context) error {
 	return j.state.Move(j.toRelpath)
 }
 
-func (j *MoveLocalFile) exists(path string) (bool, error) {
+func (j *moveLocalFileJob) exists(path string) (bool, error) {
 	_, err := os.Stat(path)
 	if os.IsNotExist(err) {
 		return false, nil
@@ -54,23 +54,23 @@ func (j *MoveLocalFile) exists(path string) (bool, error) {
 	return true, nil
 }
 
-type MoveRemoteFile struct {
-	remoteFile RemoteFile
+type moveRemoteFileJob struct {
+	remoteFile iRemoteFile
 	toRelpath  string
-	state      State
+	state      stateType
 }
 
-func (j *MoveRemoteFile) String() string {
+func (j *moveRemoteFileJob) String() string {
 	return fmt.Sprintf("Moving remote file from %q to %q", j.state.relpath, j.toRelpath)
 }
 
-func (j *MoveRemoteFile) Run(ctx context.Context) error {
+func (j *moveRemoteFileJob) Run(ctx context.Context) error {
 	dir, name := path.Split(j.toRelpath)
 	parentID, err := dirCache.Mkdirp(ctx, dir)
 	if err != nil {
 		return err
 	}
-	err = moveRemoteFile(ctx, parentID, j.remoteFile.putioFile.ID, name)
+	err = moveRemoteFile(ctx, parentID, j.remoteFile.PutioFile().ID, name)
 	if err != nil {
 		return err
 	}

@@ -1,4 +1,4 @@
-package main
+package putiosync
 
 import (
 	"context"
@@ -6,47 +6,50 @@ import (
 	"io"
 	"os"
 	"path"
-	"path/filepath"
+
+	"github.com/putdotio/putio-sync/internal/inode"
+	"github.com/putdotio/putio-sync/internal/progress"
+	"github.com/putdotio/putio-sync/internal/tus"
 )
 
-type Upload struct {
-	localFile *LocalFile
-	state     *State
+type uploadJob struct {
+	localFile iLocalFile
+	state     *stateType
 }
 
-func (d *Upload) String() string {
+func (d *uploadJob) String() string {
 	return fmt.Sprintf("Uploading %q", d.localFile.RelPath())
 }
 
-func (d *Upload) tryResume(ctx context.Context) bool {
+func (d *uploadJob) tryResume(ctx context.Context) bool {
 	if d.state == nil {
 		return false
 	}
-	if d.state.Status != StatusUploading {
+	if d.state.Status != statusUploading {
 		return false
 	}
 	if d.state.UploadURL == "" {
 		return false
 	}
-	if d.state.Size != d.localFile.info.Size() {
+	if d.state.Size != d.localFile.Info().Size() {
 		return false
 	}
-	inode, _ := GetInode(d.localFile.info)
-	if d.state.LocalInode != inode {
+	in, _ := inode.Get(d.localFile.Info())
+	if d.state.LocalInode != in {
 		return false
 	}
-	offset, err := GetUploadOffset(ctx, token, d.state.UploadURL)
+	offset, err := tus.GetOffset(ctx, httpClient, defaultTimeout, token, d.state.UploadURL)
 	if err != nil {
 		return false
 	}
 	d.state.Offset = offset
-	return offset <= d.localFile.info.Size()
+	return offset <= d.localFile.Info().Size()
 }
 
-func (d *Upload) Run(ctx context.Context) error {
+func (d *uploadJob) Run(ctx context.Context) error {
 	ok := d.tryResume(ctx)
 	if !ok {
-		inode, err := GetInode(d.localFile.info)
+		in, err := inode.Get(d.localFile.Info())
 		if err != nil {
 			return err
 		}
@@ -55,23 +58,23 @@ func (d *Upload) Run(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-		location, err := CreateUpload(ctx, token, filename, parentID, d.localFile.info.Size())
+		location, err := tus.CreateUpload(ctx, httpClient, defaultTimeout, token, filename, parentID, d.localFile.Info().Size())
 		if err != nil {
 			return err
 		}
-		d.state = &State{
-			Status:     StatusUploading,
-			LocalInode: inode,
+		d.state = &stateType{
+			Status:     statusUploading,
+			LocalInode: in,
 			UploadURL:  location,
-			Size:       d.localFile.info.Size(),
-			relpath:    d.localFile.relpath,
+			Size:       d.localFile.Info().Size(),
+			relpath:    d.localFile.RelPath(),
 		}
 		err = d.state.Write()
 		if err != nil {
 			return err
 		}
 	}
-	f, err := os.Open(filepath.Join(localPath, filepath.FromSlash(d.localFile.relpath)))
+	f, err := os.Open(d.localFile.FullPath())
 	if err != nil {
 		return err
 	}
@@ -80,14 +83,14 @@ func (d *Upload) Run(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	pr := NewProgress(f, d.state.Offset, d.state.Size, d.String())
+	pr := progress.New(f, d.state.Offset, d.state.Size, d.String())
 	pr.Start()
-	fileID, crc32, err := SendFile(ctx, token, pr, d.state.UploadURL, d.state.Offset)
+	fileID, crc32, err := tus.SendFile(ctx, httpClient, defaultTimeout, token, pr, d.state.UploadURL, d.state.Offset)
 	pr.Stop()
 	if err != nil {
 		return err
 	}
-	d.state.Status = StatusSynced
+	d.state.Status = statusSynced
 	d.state.RemoteID = fileID
 	d.state.CRC32 = crc32
 	err = d.state.Write()

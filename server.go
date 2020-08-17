@@ -1,4 +1,4 @@
-package main
+package putiosync
 
 import (
 	"context"
@@ -14,27 +14,29 @@ const (
 	serverShutdownTimeout = 5 * time.Second
 )
 
-type Server struct {
-	srv  *http.Server
-	done chan struct{}
+type httpServer struct {
+	srv *http.Server
 }
 
-func NewServer(addr string) *Server {
+func newServer(addr string) *httpServer {
 	m := http.NewServeMux()
-	m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) { _, _ = w.Write([]byte("putio-sync " + Version)) })
-	s := &Server{
+	m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) { _, _ = w.Write([]byte("putio-sync")) })
+	s := &httpServer{
 		srv: &http.Server{
 			Addr:         addr,
 			Handler:      m,
 			ReadTimeout:  serverReadTimeout,
 			WriteTimeout: serverWriteTimeout,
 		},
-		done: make(chan struct{}),
 	}
 	return s
 }
 
-func (s *Server) Start() {
+func (s *httpServer) Close() {
+	s.srv.Close()
+}
+
+func (s *httpServer) Start() {
 	go func() {
 		if err := s.srv.ListenAndServe(); err != http.ErrServerClosed {
 			log.Fatal(err)
@@ -42,16 +44,8 @@ func (s *Server) Start() {
 	}()
 }
 
-func (s *Server) Shutdown() error {
+func (s *httpServer) Shutdown() error {
 	ctx, cancel := context.WithTimeout(context.Background(), serverShutdownTimeout)
 	defer cancel()
-	if err := s.srv.Shutdown(ctx); err != nil {
-		return err
-	}
-	close(s.done)
-	return nil
-}
-
-func (s *Server) Wait() {
-	<-s.done
+	return s.srv.Shutdown(ctx)
 }

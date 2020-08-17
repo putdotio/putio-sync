@@ -1,17 +1,18 @@
-package main
+package putiosync
 
 import (
 	"sort"
 	"strings"
 
 	"github.com/cenkalti/log"
+	"github.com/putdotio/putio-sync/internal/inode"
 )
 
 // Reconciliation function does not perform any operation.
 // It only takes the filesystem state as input and returns operations to be performed on those fileystems.
 // It must be testable without side effects.
-func Reconciliation(syncFiles map[string]*SyncFile) []Job {
-	var jobs []Job
+func reconciliation(syncFiles map[string]*syncFile) []iJob {
+	var jobs []iJob
 
 	// Sort files by path for deterministic output
 	files := sortSyncFiles(syncFiles)
@@ -48,51 +49,51 @@ func Reconciliation(syncFiles map[string]*SyncFile) []Job {
 	return jobs
 }
 
-func syncFresh(sf *SyncFile) Job {
+func syncFresh(sf *syncFile) iJob {
 	switch {
 	case sf.local != nil && sf.remote == nil:
 		// File present only on local side. Copy to the remote side.
-		if sf.local.info.IsDir() {
-			return &CreateRemoteFolder{
+		if sf.local.Info().IsDir() {
+			return &createRemoteFolderJob{
 				relpath: sf.relpath,
 			}
 		}
-		return &Upload{
+		return &uploadJob{
 			localFile: sf.local,
 		}
 	case sf.local == nil && sf.remote != nil:
 		// File present only on remote side. Copy to the local side.
-		if sf.remote.putioFile.IsDir() {
-			return &CreateLocalFolder{
+		if sf.remote.PutioFile().IsDir() {
+			return &createLocalFolderJob{
 				relpath:  sf.relpath,
-				remoteID: sf.remote.putioFile.ID,
+				remoteID: sf.remote.PutioFile().ID,
 			}
 		}
-		return &Download{
+		return &downloadJob{
 			remoteFile: sf.remote,
 		}
 	case sf.local != nil && sf.remote != nil:
 		// File exists on both sides
 		switch {
-		case sf.local.info.IsDir() && sf.remote.Info().IsDir():
+		case sf.local.Info().IsDir() && sf.remote.Info().IsDir():
 			// Dir exists on both sides, save this state to db
-			return &WriteDirState{
-				remoteID: sf.remote.putioFile.ID,
-				relpath:  sf.remote.relpath,
+			return &writeDirStateJob{
+				remoteID: sf.remote.PutioFile().ID,
+				relpath:  sf.remote.RelPath(),
 			}
-		case sf.local.info.IsDir() || sf.remote.Info().IsDir():
+		case sf.local.Info().IsDir() || sf.remote.Info().IsDir():
 			// One of the sides is a dir, the other is a file
 			log.Warningf("Conflicting file, skipping sync: %q", sf.relpath)
 			return nil
 		// Both sides are file, not folder
-		case sf.local.info.Size() != sf.remote.putioFile.Size:
+		case sf.local.Info().Size() != sf.remote.PutioFile().Size:
 			log.Warningf("File sizes differ, skipping sync: %q", sf.relpath)
 			return nil
 		default:
 			// Assume files are same if they are in same size
-			return &WriteFileState{
-				localFile:  *sf.local,
-				remoteFile: *sf.remote,
+			return &writeFileStateJob{
+				localFile:  sf.local,
+				remoteFile: sf.remote,
 			}
 		}
 	default:
@@ -101,23 +102,23 @@ func syncFresh(sf *SyncFile) Job {
 	}
 }
 
-func syncWithState(sf *SyncFile, filesByRemoteID map[int64]*SyncFile, filesByInode map[uint64]*SyncFile) []Job {
+func syncWithState(sf *syncFile, filesByRemoteID map[int64]*syncFile, filesByInode map[uint64]*syncFile) []iJob {
 	// We have a state from previous sync. Compare local and remote sides with existing state.
 	switch sf.state.Status {
-	case StatusSynced:
+	case statusSynced:
 		switch {
 		case sf.local != nil && sf.remote != nil:
 			// Exist on both sides
-			if sf.local.info.IsDir() && sf.remote.Info().IsDir() {
+			if sf.local.Info().IsDir() && sf.remote.Info().IsDir() {
 				// Both sides are directory
 				return nil
 			}
-			if sf.local.info.IsDir() || sf.remote.Info().IsDir() {
+			if sf.local.Info().IsDir() || sf.remote.Info().IsDir() {
 				// One of the sides is a file
 				log.Warningf("Conflicting file, skipping sync: %q", sf.relpath)
 				return nil
 			}
-			if sf.state.Size != sf.local.info.Size() || sf.state.Size != sf.remote.putioFile.Size {
+			if sf.state.Size != sf.local.Info().Size() || sf.state.Size != sf.remote.PutioFile().Size {
 				log.Warningf("File sizes differ, skipping sync: %q", sf.relpath)
 				return nil
 			}
@@ -131,15 +132,15 @@ func syncWithState(sf *SyncFile, filesByRemoteID map[int64]*SyncFile, filesByIno
 				// File with the same id is found on another path
 				if target.state == nil {
 					// There is no existing state in move target
-					if target.remote.putioFile.CRC32 == sf.state.CRC32 {
+					if target.remote.PutioFile().CRC32 == sf.state.CRC32 {
 						// Remote file is not changed
-						inode, _ := GetInode(sf.local.info)
-						if inode == sf.state.LocalInode {
+						in, _ := inode.Get(sf.local.Info())
+						if in == sf.state.LocalInode {
 							// Local file is not changed too
 							// Then, file must be moved. We can move the local file to same path.
 							target.skip = true
-							return []Job{&MoveLocalFile{
-								localFile: *sf.local,
+							return []iJob{&moveLocalFileJob{
+								localFile: sf.local,
 								toRelpath: target.relpath,
 								state:     *sf.state,
 							}}
@@ -148,8 +149,8 @@ func syncWithState(sf *SyncFile, filesByRemoteID map[int64]*SyncFile, filesByIno
 				}
 			}
 			// File is deleted on remote side
-			return []Job{&DeleteLocalFile{
-				localFile: *sf.local,
+			return []iJob{&deleteLocalFileJob{
+				localFile: sf.local,
 				state:     *sf.state,
 			}}
 		case sf.local == nil && sf.remote != nil:
@@ -158,15 +159,15 @@ func syncWithState(sf *SyncFile, filesByRemoteID map[int64]*SyncFile, filesByIno
 			if ok { // nolint: nestif
 				// File with same inode is found on another path
 				if target.state == nil {
-					if sf.remote.putioFile.CRC32 == sf.state.CRC32 {
+					if sf.remote.PutioFile().CRC32 == sf.state.CRC32 {
 						// Remote file is not changed
-						inode, _ := GetInode(target.local.info)
-						if inode == sf.state.LocalInode {
+						in, _ := inode.Get(target.local.Info())
+						if in == sf.state.LocalInode {
 							// Local file is not changed too
 							// Then, file must be moved. We can move the remote file to same path.
 							target.skip = true
-							return []Job{&MoveRemoteFile{
-								remoteFile: *sf.remote,
+							return []iJob{&moveRemoteFileJob{
+								remoteFile: sf.remote,
 								toRelpath:  target.relpath,
 								state:      *sf.state,
 							}}
@@ -175,57 +176,57 @@ func syncWithState(sf *SyncFile, filesByRemoteID map[int64]*SyncFile, filesByIno
 				}
 			}
 			// File is delete on local side
-			return []Job{&DeleteRemoteFile{
-				remoteFile: *sf.remote,
+			return []iJob{&deleteRemoteFileJob{
+				remoteFile: sf.remote,
 				state:      *sf.state,
 			}}
 		case sf.local == nil && sf.remote == nil:
 			// File deleted on both sides, handled by other cases above, let's delete the state.
-			return []Job{&DeleteState{
+			return []iJob{&deleteStateJob{
 				state: *sf.state,
 			}}
 		default:
 			log.Errorf("Unhandled case for %q", sf.relpath)
 			return nil
 		}
-	case StatusDownloading:
+	case statusDownloading:
 		if sf.local == nil && sf.remote != nil {
-			if sf.remote.putioFile.CRC32 == sf.state.CRC32 {
+			if sf.remote.PutioFile().CRC32 == sf.state.CRC32 {
 				// Remote file is still the same, resume download
-				return []Job{&Download{
+				return []iJob{&downloadJob{
 					remoteFile: sf.remote,
 					state:      sf.state,
 				}}
 			}
 		}
 		// Cancel current download and make a new sync decision
-		return []Job{
-			&DeleteState{
+		return []iJob{
+			&deleteStateJob{
 				state: *sf.state,
 			},
 			syncFresh(sf),
 		}
-	case StatusUploading:
+	case statusUploading:
 		if sf.local != nil && sf.remote == nil {
-			inode, _ := GetInode(sf.local.info)
-			if inode == sf.state.LocalInode {
+			in, _ := inode.Get(sf.local.Info())
+			if in == sf.state.LocalInode {
 				// Local file is still the same, resume upload
-				return []Job{&Upload{
+				return []iJob{&uploadJob{
 					localFile: sf.local,
 					state:     sf.state,
 				}}
 			}
 		}
 		// Cancel current upload and make a new sync decision
-		return []Job{
-			&DeleteState{
+		return []iJob{
+			&deleteStateJob{
 				state: *sf.state,
 			},
 			syncFresh(sf),
 		}
 	default:
 		// Invalid status, should not happen in normal usage.
-		return []Job{&DeleteState{
+		return []iJob{&deleteStateJob{
 			state: *sf.state,
 		}}
 	}
@@ -234,8 +235,8 @@ func syncWithState(sf *SyncFile, filesByRemoteID map[int64]*SyncFile, filesByIno
 // sortSyncFiles so that folders come after regular files.
 // This is required for correct moving of folders with files inside.
 // First, files are synced, then folder can be moved or deleted.
-func sortSyncFiles(m map[string]*SyncFile) []*SyncFile {
-	a := make([]*SyncFile, 0, len(m))
+func sortSyncFiles(m map[string]*syncFile) []*syncFile {
+	a := make([]*syncFile, 0, len(m))
 	for _, sf := range m {
 		a = append(a, sf)
 	}
@@ -256,26 +257,26 @@ func isChildOf(child, parent string) bool {
 	return strings.HasPrefix(child, parent+"/")
 }
 
-func mapRemoteFilesByID(syncFiles map[string]*SyncFile) map[int64]*SyncFile {
-	m := make(map[int64]*SyncFile, len(syncFiles))
+func mapRemoteFilesByID(syncFiles map[string]*syncFile) map[int64]*syncFile {
+	m := make(map[int64]*syncFile, len(syncFiles))
 	for _, sf := range syncFiles {
 		if sf.remote != nil {
-			m[sf.remote.putioFile.ID] = sf
+			m[sf.remote.PutioFile().ID] = sf
 		}
 	}
 	return m
 }
 
-func mapLocalFilesByInode(syncFiles map[string]*SyncFile) map[uint64]*SyncFile {
-	m := make(map[uint64]*SyncFile, len(syncFiles))
+func mapLocalFilesByInode(syncFiles map[string]*syncFile) map[uint64]*syncFile {
+	m := make(map[uint64]*syncFile, len(syncFiles))
 	for _, sf := range syncFiles {
 		if sf.local != nil {
-			inode, err := GetInode(sf.local.info)
+			in, err := inode.Get(sf.local.Info())
 			if err != nil {
 				log.Error(err)
 				continue
 			}
-			m[inode] = sf
+			m[in] = sf
 		}
 	}
 	return m

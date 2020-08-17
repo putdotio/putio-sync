@@ -1,26 +1,42 @@
-package main
+package putiosync
 
 import (
 	"fmt"
+	"os"
+
+	"github.com/putdotio/go-putio"
+	"github.com/putdotio/putio-sync/internal/walker"
 )
 
-type SyncFile struct {
-	local   *LocalFile
-	remote  *RemoteFile
-	state   *State
+type iLocalFile interface {
+	Info() os.FileInfo
+	RelPath() string
+	FullPath() string
+}
+
+type iRemoteFile interface {
+	Info() os.FileInfo
+	RelPath() string
+	PutioFile() *putio.File
+}
+
+type syncFile struct {
+	local   iLocalFile
+	remote  iRemoteFile
+	state   *stateType
 	relpath string
 	skip    bool
 }
 
-func (f *SyncFile) String() string {
+func (f *syncFile) String() string {
 	flags := []byte("...")
 	if f.state != nil {
 		switch f.state.Status {
-		case StatusSynced:
+		case statusSynced:
 			flags[0] = 'S'
-		case StatusDownloading:
+		case statusDownloading:
 			flags[0] = 'D'
-		case StatusUploading:
+		case statusUploading:
 			flags[0] = 'U'
 		default:
 			flags[0] = '?'
@@ -35,23 +51,23 @@ func (f *SyncFile) String() string {
 	return fmt.Sprintf("%s %s", string(flags), f.relpath)
 }
 
-func GroupFiles(states []State, localFiles []*LocalFile, remoteFiles []*RemoteFile) map[string]*SyncFile {
-	m := make(map[string]*SyncFile)
-	initSyncFile := func(relpath string) *SyncFile {
+func groupFiles(states []stateType, localFiles []*walker.LocalFile, remoteFiles []*walker.RemoteFile) map[string]*syncFile {
+	m := make(map[string]*syncFile)
+	initSyncFile := func(relpath string) *syncFile {
 		sf, ok := m[relpath]
 		if ok {
 			return sf
 		}
-		sf = &SyncFile{relpath: relpath}
+		sf = &syncFile{relpath: relpath}
 		m[relpath] = sf
 		return sf
 	}
 	for _, lf := range localFiles {
-		sf := initSyncFile(lf.relpath)
+		sf := initSyncFile(lf.RelPath())
 		sf.local = lf
 	}
 	for _, rf := range remoteFiles {
-		sf := initSyncFile(rf.relpath)
+		sf := initSyncFile(rf.RelPath())
 		sf.remote = rf
 	}
 	for _, state := range states {

@@ -1,10 +1,10 @@
-package main
+package putiosync
 
 import (
 	"context"
 )
 
-type Job interface {
+type iJob interface {
 	Run(context.Context) error
 	String() string
 }
