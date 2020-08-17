@@ -20,7 +20,6 @@ import (
 var Version = "0.0.0"
 
 // TODO Reconciliation tests
-// TODO Measure upload progress
 // TODO Daemon mode
 // TODO HTTP API
 

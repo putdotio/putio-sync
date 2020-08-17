@@ -80,7 +80,10 @@ func (d *Upload) Run(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	fileID, crc32, err := SendFile(ctx, token, f, d.state.UploadURL, d.state.Offset)
+	pr := NewProgress(f, d.state.Offset, d.state.Size, d.String())
+	pr.Start()
+	fileID, crc32, err := SendFile(ctx, token, pr, d.state.UploadURL, d.state.Offset)
+	pr.Stop()
 	if err != nil {
 		return err
 	}
