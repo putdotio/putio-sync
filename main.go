@@ -33,6 +33,7 @@ var (
 	password    = flag.String("password", "", "put.io account password")
 	dryrun      = flag.Bool("dryrun", false, "do not make changes on filesystems")
 	repeat      = flag.Duration("repeat", 0, "sync repeatedly, pause given duration between syncs")
+	server      = flag.String("server", "", "listen address for HTTP API")
 )
 
 var (
@@ -95,6 +96,11 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	var srv *Server
+	if *server != "" {
+		srv = NewServer(*server)
+		srv.Start()
+	}
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	ch := make(chan os.Signal, 1)
@@ -103,7 +109,14 @@ func main() {
 		sig := <-ch
 		log.Noticef("Received %s. Stopping sync.", sig)
 		cancel()
+
+		if srv != nil {
+			if err := srv.Shutdown(); err != nil {
+				log.Fatalln("Server shutdown failed:", err)
+			}
+		}
 	}()
+REPEAT_LOOP:
 	for {
 		err = syncOnce(ctx)
 		if err != nil {
@@ -120,8 +133,12 @@ func main() {
 		select {
 		case <-time.After(*repeat):
 		case <-ctx.Done():
-			return
+			break REPEAT_LOOP
 		}
+	}
+	if srv != nil {
+		srv.Wait()
+		log.Debug("Server has shutdown successfully")
 	}
 }
 
