@@ -25,6 +25,10 @@ func (c *DirCache) Debug() {
 	}
 }
 
+func (c *DirCache) Clear() {
+	c.m = make(map[string]int64)
+}
+
 func (c *DirCache) Set(relpath string, id int64) {
 	relpath = strings.TrimRight(relpath, "/")
 	c.m[relpath] = id

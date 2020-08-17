@@ -26,6 +26,7 @@ func syncRoots(ctx context.Context) error {
 	}
 
 	// Set DirCache entries for existing remote folders
+	dirCache.Clear()
 	for _, rf := range remoteFiles {
 		if rf.putioFile.IsDir() {
 			dirCache.Set(rf.relpath, rf.putioFile.ID)
