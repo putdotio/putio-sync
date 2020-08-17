@@ -104,10 +104,10 @@ func (d *Download) Run(ctx context.Context) error {
 	tr := io.TeeReader(rc, trw)
 
 	pr := NewProgressReader(tr, d.state.Offset, d.state.Size, d.String())
-	go pr.Run()
+	pr.Start()
 	remaining := d.state.Size - d.state.Offset
 	n, copyErr := io.CopyN(wc, pr, remaining)
-	pr.Close()
+	pr.Stop()
 
 	err = wc.Close()
 	if err != nil {
@@ -181,7 +181,7 @@ type ProgressReader struct {
 	size    int64
 	prefix  string
 	counter *ratecounter.RateCounter
-	closeC  chan struct{}
+	ticker  *time.Ticker
 }
 
 func NewProgressReader(r io.Reader, offset, size int64, prefix string) *ProgressReader {
@@ -191,7 +191,6 @@ func NewProgressReader(r io.Reader, offset, size int64, prefix string) *Progress
 		size:    size,
 		prefix:  prefix,
 		counter: ratecounter.NewRateCounter(time.Second),
-		closeC:  make(chan struct{}),
 	}
 }
 
@@ -202,20 +201,20 @@ func (r *ProgressReader) Read(p []byte) (int, error) {
 	return n, err
 }
 
-func (r *ProgressReader) Run() {
-	for {
-		select {
-		case <-time.After(time.Second): // TODO use time.Ticker
-			offset := atomic.LoadInt64(&r.offset)
-			progress := (offset * 100) / r.size
-			speed := r.counter.Rate() / 1024
-			log.Infof("%s %d%% %dKB/s", r.prefix, progress, speed)
-		case <-r.closeC:
-			return
-		}
+func (r *ProgressReader) Start() {
+	r.ticker = time.NewTicker(time.Second)
+	go r.run()
+}
+
+func (r *ProgressReader) run() {
+	for range r.ticker.C {
+		offset := atomic.LoadInt64(&r.offset)
+		progress := (offset * 100) / r.size
+		speed := r.counter.Rate() / 1024
+		log.Infof("%s %d/%d MB (%d%%) %d KB/s", r.prefix, offset/(1<<20), r.size/(1<<20), progress, speed)
 	}
 }
 
-func (r *ProgressReader) Close() {
-	close(r.closeC)
+func (r *ProgressReader) Stop() {
+	r.ticker.Stop()
 }
