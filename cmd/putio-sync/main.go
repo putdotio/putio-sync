@@ -76,7 +76,10 @@ func main() {
 	var err error
 	flag.Parse()
 	if *versionFlag {
-		fmt.Printf("%s (%s) [%s]", version, commit, date)
+		if len(commit) > 7 {
+			commit = commit[:7]
+		}
+		fmt.Printf("%s (%s) [%s]\n", version, commit, date)
 		return
 	}
 	if *debugFlag {
