@@ -15,9 +15,12 @@ import (
 	putiosync "github.com/putdotio/putio-sync/v2"
 )
 
-// Version of client. Set during build.
-// "0.0.0" is the development version.
-var Version = "0.0.0"
+// These variables are set by goreleaser on build.
+var (
+	version = "0.0.0"
+	commit  = ""
+	date    = ""
+)
 
 // TODO HTTP API
 // TODO websocket endpoint for progress updates
@@ -73,7 +76,7 @@ func main() {
 	var err error
 	flag.Parse()
 	if *versionFlag {
-		fmt.Println(Version)
+		fmt.Printf("%s (%s) [%s]", version, commit, date)
 		return
 	}
 	if *debugFlag {

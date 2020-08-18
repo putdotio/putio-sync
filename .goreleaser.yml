@@ -2,18 +2,20 @@ before:
   hooks:
     - go mod download
 builds:
-  - env:
-    - CGO_ENABLED=0
+  -
     main: ./cmd/putio-sync/main.go
-    ldflags:
-    - -s -w -X main.Version={{.Version}}
     goos:
-    - linux
-    - darwin
-    - windows
+      - linux
+      - darwin
+      - windows
     goarch:
-    - "386"
-    - amd64
+      - "386"
+      - amd64
+    ignore:
+      - goos: darwin
+        goarch: 386
+    env:
+      - CGO_ENABLED=0
 archives:
   - format: tar.gz
     name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
