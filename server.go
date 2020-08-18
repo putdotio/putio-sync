@@ -2,6 +2,7 @@ package putiosync
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -21,6 +22,7 @@ type httpServer struct {
 func newServer(addr string) *httpServer {
 	m := http.NewServeMux()
 	m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) { _, _ = w.Write([]byte("putio-sync")) })
+	m.HandleFunc("/syncing", func(w http.ResponseWriter, r *http.Request) { _, _ = w.Write([]byte(fmt.Sprintf("%v", syncing))) })
 	s := &httpServer{
 		srv: &http.Server{
 			Addr:         addr,

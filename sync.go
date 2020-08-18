@@ -33,6 +33,7 @@ var (
 	dirCache       *dircache.DirCache
 	tempDirPath    string
 	uploader       *tus.Uploader
+	syncing        bool
 )
 
 func Sync(ctx context.Context, config Config) error {
@@ -161,6 +162,8 @@ func syncRoots(ctx context.Context) error {
 		log.Infoln("No changes detected")
 		return nil
 	}
+	syncing = true
+	defer func() { syncing = false }()
 	for _, job := range jobs {
 		log.Infoln(job.String())
 		if cfg.DryRun {
