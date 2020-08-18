@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"github.com/putdotio/go-putio"
-	"github.com/putdotio/putio-sync/internal/walker"
+	"github.com/putdotio/putio-sync/v2/internal/walker"
 )
 
 type iLocalFile interface {

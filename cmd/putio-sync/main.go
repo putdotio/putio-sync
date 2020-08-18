@@ -12,7 +12,7 @@ import (
 	"github.com/BurntSushi/toml"
 	"github.com/adrg/xdg"
 	"github.com/cenkalti/log"
-	putiosync "github.com/putdotio/putio-sync"
+	putiosync "github.com/putdotio/putio-sync/v2"
 )
 
 // Version of client. Set during build.

@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/cenkalti/log"
-	"github.com/putdotio/putio-sync/internal/inode"
+	"github.com/putdotio/putio-sync/v2/internal/inode"
 )
 
 // Reconciliation function does not perform any operation.

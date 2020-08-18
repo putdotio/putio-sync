@@ -1,4 +1,4 @@
-module github.com/putdotio/putio-sync
+module github.com/putdotio/putio-sync/v2
 
 go 1.14
 

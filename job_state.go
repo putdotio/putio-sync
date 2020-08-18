@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 
 	"github.com/cenkalti/log"
-	"github.com/putdotio/putio-sync/internal/inode"
-	"github.com/putdotio/putio-sync/internal/tus"
+	"github.com/putdotio/putio-sync/v2/internal/inode"
+	"github.com/putdotio/putio-sync/v2/internal/tus"
 )
 
 type deleteStateJob struct {

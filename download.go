@@ -10,8 +10,8 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/putdotio/putio-sync/internal/inode"
-	"github.com/putdotio/putio-sync/internal/progress"
+	"github.com/putdotio/putio-sync/v2/internal/inode"
+	"github.com/putdotio/putio-sync/v2/internal/progress"
 )
 
 type downloadJob struct {

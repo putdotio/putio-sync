@@ -9,10 +9,10 @@ import (
 	"github.com/adrg/xdg"
 	"github.com/cenkalti/log"
 	"github.com/putdotio/go-putio"
-	"github.com/putdotio/putio-sync/internal/auth"
-	"github.com/putdotio/putio-sync/internal/dircache"
-	"github.com/putdotio/putio-sync/internal/tmpdir"
-	"github.com/putdotio/putio-sync/internal/walker"
+	"github.com/putdotio/putio-sync/v2/internal/auth"
+	"github.com/putdotio/putio-sync/v2/internal/dircache"
+	"github.com/putdotio/putio-sync/v2/internal/tmpdir"
+	"github.com/putdotio/putio-sync/v2/internal/walker"
 	"go.etcd.io/bbolt"
 )
 

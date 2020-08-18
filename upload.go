@@ -7,9 +7,9 @@ import (
 	"os"
 	"path"
 
-	"github.com/putdotio/putio-sync/internal/inode"
-	"github.com/putdotio/putio-sync/internal/progress"
-	"github.com/putdotio/putio-sync/internal/tus"
+	"github.com/putdotio/putio-sync/v2/internal/inode"
+	"github.com/putdotio/putio-sync/v2/internal/progress"
+	"github.com/putdotio/putio-sync/v2/internal/tus"
 )
 
 type uploadJob struct {
