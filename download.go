@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/cenkalti/log"
 	"github.com/putdotio/putio-sync/v2/internal/inode"
 	"github.com/putdotio/putio-sync/v2/internal/progress"
 )
@@ -85,42 +86,48 @@ func (d *downloadJob) Run(ctx context.Context) error {
 		}
 	}
 
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
-	rc, err := d.openRemote(ctx, d.state.Offset)
-	if err != nil {
-		return err
-	}
-	defer rc.Close()
-
-	// Stop download if download speed is too slow.
-	// Timer for cancelling the context will be reset after each successful read from stream.
-	trw := &timerResetWriter{timer: time.AfterFunc(defaultTimeout, cancel)}
-	tr := io.TeeReader(rc, trw)
-
-	pr := progress.New(tr, d.state.Offset, d.state.Size, d.String())
-	pr.Start()
 	remaining := d.state.Size - d.state.Offset
-	n, copyErr := io.CopyN(wc, pr, remaining)
-	pr.Stop()
+	if remaining > 0 {
+		ctx, cancel := context.WithCancel(ctx)
+		defer cancel()
+		rc, err := d.openRemote(ctx, d.state.Offset)
+		if err != nil {
+			return err
+		}
+		defer rc.Close()
 
-	err = wc.Close()
-	if err != nil {
-		return err
-	}
+		// Stop download if download speed is too slow.
+		// Timer for cancelling the context will be reset after each successful read from stream.
+		trw := &timerResetWriter{timer: time.AfterFunc(defaultTimeout, cancel)}
+		tr := io.TeeReader(rc, trw)
 
-	d.state.Offset += n
-	err = d.state.Write()
-	if err != nil {
-		return err
-	}
+		pr := progress.New(tr, d.state.Offset, d.state.Size, d.String())
+		pr.Start()
+		n, copyErr := io.CopyN(wc, pr, remaining)
+		pr.Stop()
 
-	if copyErr != nil {
-		return copyErr
+		err = wc.Close()
+		if err != nil {
+			return err
+		}
+
+		d.state.Offset += n
+		err = d.state.Write()
+		if err != nil {
+			return err
+		}
+
+		if copyErr != nil {
+			return copyErr
+		}
 	}
 
 	oldPath := filepath.Join(tempDirPath, d.state.DownloadTempName)
 	newPath := filepath.Join(localPath, filepath.FromSlash(d.state.relpath))
+	err := os.MkdirAll(filepath.Dir(newPath), 0777)
+	if err != nil {
+		return err
+	}
 	err = os.Rename(oldPath, newPath)
 	if err != nil {
 		return err
@@ -148,6 +155,7 @@ func (d *downloadJob) openRemote(baseCtx context.Context, offset int64) (rc io.R
 		return
 	}
 	req.Header.Set("range", fmt.Sprintf("bytes=%d-", offset))
+	log.Debugln("range", req.Header.Get("range"))
 	resp, err := httpClient.Do(req)
 	if err != nil {
 		return
