@@ -11,7 +11,6 @@ import (
 
 type Progress struct {
 	r       io.Reader
-	w       io.Writer
 	offset  int64
 	size    int64
 	prefix  string
@@ -19,31 +18,18 @@ type Progress struct {
 	ticker  *time.Ticker
 }
 
-func New(rw io.Reader, offset, size int64, prefix string) *Progress {
-	p := &Progress{
+func New(r io.Reader, offset, size int64, prefix string) *Progress {
+	return &Progress{
+		r:       r,
 		offset:  offset,
 		size:    size,
 		prefix:  prefix,
 		counter: ratecounter.NewRateCounter(time.Second),
 	}
-	if r, ok := rw.(io.Reader); ok {
-		p.r = r
-	}
-	if w, ok := rw.(io.Writer); ok {
-		p.w = w
-	}
-	return p
 }
 
 func (r *Progress) Read(p []byte) (int, error) {
 	n, err := r.r.Read(p)
-	r.counter.Incr(int64(n))
-	atomic.AddInt64(&r.offset, int64(n))
-	return n, err
-}
-
-func (r *Progress) Write(p []byte) (int, error) {
-	n, err := r.w.Write(p)
 	r.counter.Incr(int64(n))
 	atomic.AddInt64(&r.offset, int64(n))
 	return n, err
