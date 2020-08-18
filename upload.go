@@ -9,7 +9,6 @@ import (
 
 	"github.com/putdotio/putio-sync/v2/internal/inode"
 	"github.com/putdotio/putio-sync/v2/internal/progress"
-	"github.com/putdotio/putio-sync/v2/internal/tus"
 )
 
 type uploadJob struct {
@@ -38,7 +37,7 @@ func (d *uploadJob) tryResume(ctx context.Context) bool {
 	if d.state.LocalInode != in {
 		return false
 	}
-	offset, err := tus.GetOffset(ctx, httpClient, defaultTimeout, token, d.state.UploadURL)
+	offset, err := uploader.GetOffset(ctx, d.state.UploadURL)
 	if err != nil {
 		return false
 	}
@@ -58,7 +57,7 @@ func (d *uploadJob) Run(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-		location, err := tus.CreateUpload(ctx, httpClient, defaultTimeout, token, filename, parentID, d.localFile.Info().Size())
+		location, err := uploader.CreateUpload(ctx, filename, parentID, d.localFile.Info().Size())
 		if err != nil {
 			return err
 		}
@@ -85,7 +84,7 @@ func (d *uploadJob) Run(ctx context.Context) error {
 	}
 	pr := progress.New(f, d.state.Offset, d.state.Size, d.String())
 	pr.Start()
-	fileID, crc32, err := tus.SendFile(ctx, httpClient, defaultTimeout, token, pr, d.state.UploadURL, d.state.Offset)
+	fileID, crc32, err := uploader.SendFile(ctx, pr, d.state.UploadURL, d.state.Offset)
 	pr.Stop()
 	if err != nil {
 		return err

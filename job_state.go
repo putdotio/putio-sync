@@ -8,7 +8,6 @@ import (
 
 	"github.com/cenkalti/log"
 	"github.com/putdotio/putio-sync/v2/internal/inode"
-	"github.com/putdotio/putio-sync/v2/internal/tus"
 )
 
 type deleteStateJob struct {
@@ -27,7 +26,7 @@ func (j *deleteStateJob) Run(ctx context.Context) error {
 		}
 	}
 	if j.state.UploadURL != "" {
-		err := tus.TerminateuploadJob(ctx, httpClient, defaultTimeout, token, j.state.UploadURL)
+		err := uploader.TerminateUpload(ctx, j.state.UploadURL)
 		if err != nil {
 			log.Errorln("cannot remove upload:", err.Error())
 		}

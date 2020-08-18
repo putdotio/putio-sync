@@ -12,6 +12,7 @@ import (
 	"github.com/putdotio/putio-sync/v2/internal/auth"
 	"github.com/putdotio/putio-sync/v2/internal/dircache"
 	"github.com/putdotio/putio-sync/v2/internal/tmpdir"
+	"github.com/putdotio/putio-sync/v2/internal/tus"
 	"github.com/putdotio/putio-sync/v2/internal/walker"
 	"go.etcd.io/bbolt"
 )
@@ -31,6 +32,7 @@ var (
 	remoteFolderID int64
 	dirCache       *dircache.DirCache
 	tempDirPath    string
+	uploader       *tus.Uploader
 )
 
 func Sync(ctx context.Context, config Config) error {
@@ -106,6 +108,7 @@ func syncOnce(ctx context.Context) error {
 		return err
 	}
 	dirCache = dircache.New(client, defaultTimeout, remoteFolderID)
+	uploader = tus.NewUploader(httpClient, defaultTimeout, token)
 
 	return syncRoots(ctx)
 }

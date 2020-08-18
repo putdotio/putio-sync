@@ -17,9 +17,23 @@ const (
 	uploadURL = "https://upload.put.io/files/"
 )
 
-func CreateUpload(baseCtx context.Context, httpClient *http.Client, timeout time.Duration, token string, filename string, parentID, length int64) (location string, err error) {
+type Uploader struct {
+	client  *http.Client
+	timeout time.Duration
+	token   string
+}
+
+func NewUploader(client *http.Client, timeout time.Duration, token string) *Uploader {
+	return &Uploader{
+		client:  client,
+		timeout: timeout,
+		token:   token,
+	}
+}
+
+func (u *Uploader) CreateUpload(baseCtx context.Context, filename string, parentID, length int64) (location string, err error) {
 	log.Debugf("Creating upload %q at parent=%d", filename, parentID)
-	ctx, cancel := context.WithTimeout(baseCtx, timeout)
+	ctx, cancel := context.WithTimeout(baseCtx, u.timeout)
 	defer cancel()
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, uploadURL, nil)
 	if err != nil {
@@ -33,9 +47,9 @@ func CreateUpload(baseCtx context.Context, httpClient *http.Client, timeout time
 	req.Header.Set("Content-Length", "0")
 	req.Header.Set("Upload-Length", strconv.FormatInt(length, 10))
 	req.Header.Set("Upload-Metadata", encodeMetadata(metadata))
-	req.Header.Set("Authorization", "token "+token)
+	req.Header.Set("Authorization", "token "+u.token)
 
-	resp, err := httpClient.Do(req)
+	resp, err := u.client.Do(req)
 	if err != nil {
 		return
 	}
@@ -50,7 +64,7 @@ func CreateUpload(baseCtx context.Context, httpClient *http.Client, timeout time
 	return
 }
 
-func SendFile(ctx context.Context, httpClient *http.Client, timeout time.Duration, token string, r io.Reader, location string, offset int64) (fileID int64, crc32 string, err error) {
+func (u *Uploader) SendFile(ctx context.Context, r io.Reader, location string, offset int64) (fileID int64, crc32 string, err error) {
 	log.Debugf("Sending file %q offset=%d", location, offset)
 
 	ctx, cancel := context.WithCancel(ctx)
@@ -58,7 +72,7 @@ func SendFile(ctx context.Context, httpClient *http.Client, timeout time.Duratio
 
 	// Stop upload if speed is too slow.
 	// Wrap reader so each read call resets the timer that cancels the request on certain duration.
-	r = &timerResetReader{r: r, timer: time.AfterFunc(timeout, cancel), timeout: timeout}
+	r = &timerResetReader{r: r, timer: time.AfterFunc(u.timeout, cancel), timeout: u.timeout}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPatch, location, r)
 	if err != nil {
@@ -67,8 +81,8 @@ func SendFile(ctx context.Context, httpClient *http.Client, timeout time.Duratio
 
 	req.Header.Set("content-type", "application/offset+octet-stream")
 	req.Header.Set("upload-offset", strconv.FormatInt(offset, 10))
-	req.Header.Set("Authorization", "token "+token)
-	resp, err := httpClient.Do(req)
+	req.Header.Set("Authorization", "token "+u.token)
+	resp, err := u.client.Do(req)
 	if err != nil {
 		return
 	}
@@ -88,17 +102,17 @@ func SendFile(ctx context.Context, httpClient *http.Client, timeout time.Duratio
 	return
 }
 
-func GetOffset(ctx context.Context, httpClient *http.Client, timeout time.Duration, token string, location string) (n int64, err error) {
+func (u *Uploader) GetOffset(ctx context.Context, location string) (n int64, err error) {
 	log.Debugf("Getting upload offset %q", location)
-	ctx, cancel := context.WithTimeout(ctx, timeout)
+	ctx, cancel := context.WithTimeout(ctx, u.timeout)
 	defer cancel()
 	req, err := http.NewRequestWithContext(ctx, http.MethodHead, location, nil)
 	if err != nil {
 		return
 	}
 
-	req.Header.Set("Authorization", "token "+token)
-	resp, err := httpClient.Do(req)
+	req.Header.Set("Authorization", "token "+u.token)
+	resp, err := u.client.Do(req)
 	if err != nil {
 		return
 	}
@@ -114,17 +128,17 @@ func GetOffset(ctx context.Context, httpClient *http.Client, timeout time.Durati
 	return n, err
 }
 
-func TerminateuploadJob(ctx context.Context, httpClient *http.Client, timeout time.Duration, token string, location string) (err error) {
+func (u *Uploader) TerminateUpload(ctx context.Context, location string) (err error) {
 	log.Debugf("Terminating upload %q", location)
-	ctx, cancel := context.WithTimeout(ctx, timeout)
+	ctx, cancel := context.WithTimeout(ctx, u.timeout)
 	defer cancel()
 	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, location, nil)
 	if err != nil {
 		return
 	}
 
-	req.Header.Set("Authorization", "token "+token)
-	resp, err := httpClient.Do(req)
+	req.Header.Set("Authorization", "token "+u.token)
+	resp, err := u.client.Do(req)
 	if err != nil {
 		return
 	}
