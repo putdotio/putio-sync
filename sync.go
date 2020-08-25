@@ -34,6 +34,7 @@ var (
 	tempDirPath    string
 	uploader       *tus.Uploader
 	syncing        bool
+	syncStatus     = "Starting sync..."
 )
 
 func Sync(ctx context.Context, config Config) error {
@@ -74,7 +75,8 @@ REPEAT_LOOP:
 			}
 			log.Error(err)
 		} else {
-			log.Infoln("Sync finished successfully")
+			syncStatus = "Sync finished successfully"
+			log.Infoln(syncStatus)
 		}
 		if cfg.Repeat == 0 {
 			break
@@ -165,7 +167,8 @@ func syncRoots(ctx context.Context) error {
 	syncing = true
 	defer func() { syncing = false }()
 	for _, job := range jobs {
-		log.Infoln(job.String())
+		syncStatus = job.String()
+		log.Infoln(syncStatus)
 		if cfg.DryRun {
 			continue
 		}

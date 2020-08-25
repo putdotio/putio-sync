@@ -2,7 +2,9 @@ package putiosync
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"net"
 	"net/http"
 	"time"
 
@@ -23,6 +25,10 @@ func newServer(addr string) *httpServer {
 	m := http.NewServeMux()
 	m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) { _, _ = w.Write([]byte("putio-sync")) })
 	m.HandleFunc("/syncing", func(w http.ResponseWriter, r *http.Request) { _, _ = w.Write([]byte(fmt.Sprintf("%v", syncing))) })
+	m.HandleFunc("/status", func(w http.ResponseWriter, r *http.Request) {
+		b, _ := json.Marshal(map[string]string{"status": syncStatus})
+		_, _ = w.Write(b)
+	})
 	s := &httpServer{
 		srv: &http.Server{
 			Addr:         addr,
@@ -39,8 +45,13 @@ func (s *httpServer) Close() {
 }
 
 func (s *httpServer) Start() {
+	l, err := net.Listen("tcp4", s.srv.Addr)
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Infoln("Server is listening on", l.Addr().String())
 	go func() {
-		if err := s.srv.ListenAndServe(); err != http.ErrServerClosed {
+		if err := s.srv.Serve(l); err != http.ErrServerClosed {
 			log.Fatal(err)
 		}
 	}()
