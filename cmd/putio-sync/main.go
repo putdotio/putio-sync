@@ -36,6 +36,8 @@ var (
 	dryrun      = flag.Bool("dryrun", false, "do not make changes on filesystems")
 	repeat      = flag.Duration("repeat", 0, "sync repeatedly, pause given duration between syncs")
 	server      = flag.String("server", "", "listen address for HTTP API")
+
+	printConfigPath = flag.Bool("print-config-path", false, "print config path")
 )
 
 var (
@@ -92,6 +94,10 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
+	}
+	if *printConfigPath {
+		fmt.Println(configPath)
+		return
 	}
 	log.Infof("Using config file %q", configPath)
 	if err = readConfig(configPath, *configFlag != ""); err != nil {
