@@ -1,9 +1,20 @@
 package putiosync
 
 import (
-	"errors"
 	"time"
 )
+
+type ConfigError struct {
+	reason string
+}
+
+func newConfigError(reason string) *ConfigError {
+	return &ConfigError{reason: reason}
+}
+
+func (e *ConfigError) Error() string {
+	return "error in config: " + e.reason
+}
 
 type Config struct {
 	// Username of put.io account.
@@ -20,10 +31,10 @@ type Config struct {
 
 func (c *Config) validate() error {
 	if c.Username == "" {
-		return errors.New("empty username in config")
+		return newConfigError("empty username")
 	}
 	if c.Password == "" {
-		return errors.New("empty password in config")
+		return newConfigError("empty password")
 	}
 	return nil
 }

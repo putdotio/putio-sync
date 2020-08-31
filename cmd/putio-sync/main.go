@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -14,6 +15,8 @@ import (
 	"github.com/cenkalti/log"
 	putiosync "github.com/putdotio/putio-sync/v2"
 )
+
+const exitCodeConfigError = 10
 
 // These variables are set by goreleaser on build.
 var (
@@ -109,7 +112,14 @@ func main() {
 		log.Noticef("Received %s. Stopping sync.", sig)
 		cancel()
 	}()
-	if err = putiosync.Sync(ctx, config); err != nil {
+	err = putiosync.Sync(ctx, config)
+	var configError *putiosync.ConfigError
+	if errors.As(err, &configError) {
+		fmt.Println(configError.Error())
+		os.Exit(exitCodeConfigError)
+		return
+	}
+	if err != nil {
 		log.Fatal(err)
 	}
 }
