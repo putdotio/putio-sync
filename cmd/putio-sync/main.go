@@ -22,10 +22,7 @@ var (
 	date    = ""
 )
 
-// TODO HTTP API
-// TODO websocket endpoint for progress updates
-// TODO listen websocket for remote events
-// TODO watch local fs for changes
+// TODO Watch fs events for files larger than 4M
 
 var (
 	versionFlag = flag.Bool("version", false, "print program version")
