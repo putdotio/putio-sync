@@ -72,6 +72,9 @@ func Sync(ctx context.Context, config Config) error {
 REPEAT_LOOP:
 	for {
 		err = syncOnce(ctx)
+		if errors.Is(err, auth.ErrInvalidCredentials) {
+			return ErrInvalidCredentials
+		}
 		if err != nil {
 			if cfg.Repeat == 0 {
 				return err
@@ -102,9 +105,6 @@ REPEAT_LOOP:
 func syncOnce(ctx context.Context) error {
 	var err error
 	token, client, err = auth.Authenticate(ctx, httpClient, defaultTimeout, cfg.Username, cfg.Password)
-	if errors.Is(err, auth.ErrInvalidCredentials) {
-		return ErrInvalidCredentials
-	}
 	if err != nil {
 		return err
 	}
