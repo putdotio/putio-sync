@@ -16,7 +16,10 @@ import (
 	putiosync "github.com/putdotio/putio-sync/v2"
 )
 
-const exitCodeConfigError = 10
+const (
+	exitCodeConfigError        = 10
+	exitCodeInvalidCredentials = 11
+)
 
 // These variables are set by goreleaser on build.
 var (
@@ -117,6 +120,11 @@ func main() {
 	if errors.As(err, &configError) {
 		fmt.Println(configError.Reason)
 		os.Exit(exitCodeConfigError)
+		return
+	}
+	if errors.Is(err, putiosync.ErrInvalidCredentials) {
+		fmt.Println(err.Error())
+		os.Exit(exitCodeInvalidCredentials)
 		return
 	}
 	if err != nil {

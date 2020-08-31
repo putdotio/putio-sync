@@ -21,6 +21,8 @@ const (
 	clientSecret = "YGRIVM3BKAPGTYCR7PEC" // nolint: gosec
 )
 
+var ErrInvalidCredentials = errors.New("invalid credentials")
+
 func Authenticate(ctx context.Context, httpClient *http.Client, timeout time.Duration, username, password string) (token string, client *putio.Client, err error) {
 	log.Infof("Authenticating as user: %q", username)
 	hostname, err := os.Hostname()
@@ -43,8 +45,8 @@ func Authenticate(ctx context.Context, httpClient *http.Client, timeout time.Dur
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode == http.StatusForbidden {
-		err = errors.New("invalid username or password")
+	if resp.StatusCode == http.StatusUnauthorized {
+		err = ErrInvalidCredentials
 		return
 	}
 

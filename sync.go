@@ -2,6 +2,7 @@ package putiosync
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"path/filepath"
 	"time"
@@ -21,6 +22,8 @@ const (
 	folderName     = "putio-sync"
 	defaultTimeout = 10 * time.Second
 )
+
+var ErrInvalidCredentials = errors.New("invalid credentials")
 
 // Variables that used by Sync function.
 var (
@@ -99,6 +102,9 @@ REPEAT_LOOP:
 func syncOnce(ctx context.Context) error {
 	var err error
 	token, client, err = auth.Authenticate(ctx, httpClient, defaultTimeout, cfg.Username, cfg.Password)
+	if errors.Is(err, auth.ErrInvalidCredentials) {
+		return ErrInvalidCredentials
+	}
 	if err != nil {
 		return err
 	}
