@@ -1,6 +1,7 @@
 package putiosync
 
 import (
+	"strings"
 	"time"
 )
 
@@ -30,7 +31,7 @@ type Config struct {
 }
 
 func (c *Config) validate() error {
-	if c.Username == "" {
+	if c.Username == "" && !strings.HasPrefix(c.Password, "token/") {
 		return newConfigError("empty username")
 	}
 	if c.Password == "" {

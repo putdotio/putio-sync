@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/cenkalti/log"
@@ -24,6 +25,23 @@ const (
 var ErrInvalidCredentials = errors.New("invalid credentials")
 
 func Authenticate(ctx context.Context, httpClient *http.Client, timeout time.Duration, username, password string) (token string, client *putio.Client, err error) {
+	if strings.HasPrefix(password, "token/") {
+		// User may use a token instead of password.
+		log.Infof("Validating authentication token")
+		token = password[6:]
+		client = newClient(ctx, httpClient, token)
+		authCtx, cancel := context.WithTimeout(ctx, timeout)
+		defer cancel()
+		userID, verr := client.ValidateToken(authCtx)
+		if verr != nil {
+			err = verr
+			return
+		}
+		if userID == nil {
+			err = ErrInvalidCredentials
+		}
+		return
+	}
 	log.Infof("Authenticating as user: %q", username)
 	hostname, err := os.Hostname()
 	if err != nil {
@@ -71,10 +89,14 @@ func Authenticate(ctx context.Context, httpClient *http.Client, timeout time.Dur
 	}
 
 	token = tokenResponse.AccessToken
+	client = newClient(ctx, httpClient, token)
+	return
+}
+
+func newClient(ctx context.Context, httpClient *http.Client, token string) *putio.Client {
 	oauthToken := &oauth2.Token{AccessToken: token}
 	tokenSource := oauth2.StaticTokenSource(oauthToken)
 	clientCtx := context.WithValue(ctx, oauth2.HTTPClient, httpClient)
 	oauthClient := oauth2.NewClient(clientCtx, tokenSource)
-	client = putio.NewClient(oauthClient)
-	return
+	return putio.NewClient(oauthClient)
 }
