@@ -115,7 +115,7 @@ func main() {
 	err = putiosync.Sync(ctx, config)
 	var configError *putiosync.ConfigError
 	if errors.As(err, &configError) {
-		fmt.Println(configError.Error())
+		fmt.Println(configError.Reason)
 		os.Exit(exitCodeConfigError)
 		return
 	}

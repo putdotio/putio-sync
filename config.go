@@ -5,15 +5,15 @@ import (
 )
 
 type ConfigError struct {
-	reason string
+	Reason string
 }
 
 func newConfigError(reason string) *ConfigError {
-	return &ConfigError{reason: reason}
+	return &ConfigError{Reason: reason}
 }
 
 func (e *ConfigError) Error() string {
-	return "error in config: " + e.reason
+	return "error in config: " + e.Reason
 }
 
 type Config struct {
