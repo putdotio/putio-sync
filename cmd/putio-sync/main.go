@@ -118,12 +118,12 @@ func main() {
 	err = putiosync.Sync(ctx, config)
 	var configError *putiosync.ConfigError
 	if errors.As(err, &configError) {
-		fmt.Println(configError.Reason)
+		fmt.Fprintln(os.Stderr, configError.Reason)
 		os.Exit(exitCodeConfigError)
 		return
 	}
 	if errors.Is(err, putiosync.ErrInvalidCredentials) {
-		fmt.Println(err.Error())
+		fmt.Fprintln(os.Stderr, err.Error())
 		os.Exit(exitCodeInvalidCredentials)
 		return
 	}
