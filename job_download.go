@@ -133,7 +133,7 @@ func (d *downloadJob) Run(ctx context.Context) error {
 		return err
 	}
 
-	in, err := inode.GetPath(newPath)
+	in, err := inode.Get(newPath, nil)
 	if err != nil {
 		return err
 	}

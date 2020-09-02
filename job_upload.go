@@ -33,7 +33,7 @@ func (d *uploadJob) tryResume(ctx context.Context) bool {
 	if d.state.Size != d.localFile.Info().Size() {
 		return false
 	}
-	in, _ := inode.Get(d.localFile.Info())
+	in, _ := inode.Get(d.localFile.FullPath(), d.localFile.Info())
 	if d.state.LocalInode != in {
 		return false
 	}
@@ -48,7 +48,7 @@ func (d *uploadJob) tryResume(ctx context.Context) bool {
 func (d *uploadJob) Run(ctx context.Context) error {
 	ok := d.tryResume(ctx)
 	if !ok {
-		in, err := inode.Get(d.localFile.Info())
+		in, err := inode.Get(d.localFile.FullPath(), d.localFile.Info())
 		if err != nil {
 			return err
 		}

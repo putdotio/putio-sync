@@ -134,7 +134,7 @@ func syncWithState(sf *syncFile, filesByRemoteID map[int64]*syncFile, filesByIno
 					// There is no existing state in move target
 					if target.remote.PutioFile().CRC32 == sf.state.CRC32 {
 						// Remote file is not changed
-						in, _ := inode.Get(sf.local.Info())
+						in, _ := inode.Get(sf.local.FullPath(), sf.local.Info())
 						if in == sf.state.LocalInode {
 							// Local file is not changed too
 							// Then, file must be moved. We can move the local file to same path.
@@ -161,7 +161,7 @@ func syncWithState(sf *syncFile, filesByRemoteID map[int64]*syncFile, filesByIno
 				if target.state == nil {
 					if sf.remote.PutioFile().CRC32 == sf.state.CRC32 {
 						// Remote file is not changed
-						in, _ := inode.Get(target.local.Info())
+						in, _ := inode.Get(target.local.FullPath(), target.local.Info())
 						if in == sf.state.LocalInode {
 							// Local file is not changed too
 							// Then, file must be moved. We can move the remote file to same path.
@@ -208,7 +208,7 @@ func syncWithState(sf *syncFile, filesByRemoteID map[int64]*syncFile, filesByIno
 		}
 	case statusUploading:
 		if sf.local != nil && sf.remote == nil {
-			in, _ := inode.Get(sf.local.Info())
+			in, _ := inode.Get(sf.local.FullPath(), sf.local.Info())
 			if in == sf.state.LocalInode {
 				// Local file is still the same, resume upload
 				return []iJob{&uploadJob{
@@ -271,7 +271,7 @@ func mapLocalFilesByInode(syncFiles map[string]*syncFile) map[uint64]*syncFile {
 	m := make(map[uint64]*syncFile, len(syncFiles))
 	for _, sf := range syncFiles {
 		if sf.local != nil {
-			in, err := inode.Get(sf.local.Info())
+			in, err := inode.Get(sf.local.FullPath(), sf.local.Info())
 			if err != nil {
 				log.Error(err)
 				continue

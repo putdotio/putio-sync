@@ -5,11 +5,7 @@ import (
 	"syscall"
 )
 
-func Get(fi os.FileInfo) (uint64, error) {
-	return GetPath(fi.Name())
-}
-
-func GetPath(path string) (uint64, error) {
+func Get(path string, _ os.FileInfo) (uint64, error) {
 	f, err := os.Open(path)
 	if err != nil {
 		return 0, err

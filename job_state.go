@@ -44,7 +44,7 @@ func (j *writeFileStateJob) String() string {
 }
 
 func (j *writeFileStateJob) Run(ctx context.Context) error {
-	in, err := inode.Get(j.localFile.Info())
+	in, err := inode.Get(j.localFile.FullPath(), j.localFile.Info())
 	if err != nil {
 		return err
 	}
