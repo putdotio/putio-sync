@@ -261,7 +261,9 @@ func mapRemoteFilesByID(syncFiles map[string]*syncFile) map[int64]*syncFile {
 	m := make(map[int64]*syncFile, len(syncFiles))
 	for _, sf := range syncFiles {
 		if sf.remote != nil {
-			m[sf.remote.PutioFile().ID] = sf
+			if !sf.remote.Info().IsDir() {
+				m[sf.remote.PutioFile().ID] = sf
+			}
 		}
 	}
 	return m
@@ -271,12 +273,14 @@ func mapLocalFilesByInode(syncFiles map[string]*syncFile) map[uint64]*syncFile {
 	m := make(map[uint64]*syncFile, len(syncFiles))
 	for _, sf := range syncFiles {
 		if sf.local != nil {
-			in, err := inode.Get(sf.local.FullPath(), sf.local.Info())
-			if err != nil {
-				log.Error(err)
-				continue
+			if !sf.local.Info().IsDir() {
+				in, err := inode.Get(sf.local.FullPath(), sf.local.Info())
+				if err != nil {
+					log.Error(err)
+					continue
+				}
+				m[in] = sf
 			}
-			m[in] = sf
 		}
 	}
 	return m
