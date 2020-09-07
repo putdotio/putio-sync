@@ -44,6 +44,9 @@ func Sync(ctx context.Context, config Config) error {
 	if err := config.validate(); err != nil {
 		return err
 	}
+	if config.Debug {
+		log.SetLevel(log.DEBUG)
+	}
 	dbPath, err := xdg.DataFile(filepath.Join("putio-sync", "sync.db"))
 	if err != nil {
 		return err

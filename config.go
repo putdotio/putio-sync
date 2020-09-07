@@ -34,6 +34,8 @@ type Config struct {
 	// Listen address for HTTP server.
 	// The server has an endpoint for getting the status of the sync operation.
 	Server string
+	// Set log level to debug.
+	Debug bool
 }
 
 func (c *Config) validate() error {
