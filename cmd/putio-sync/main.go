@@ -63,10 +63,6 @@ func main() {
 		fmt.Println(versionString())
 		return
 	}
-	if *printConfigPath {
-		fmt.Println(viper.ConfigFileUsed())
-		return
-	}
 
 	if *configFlag != "" {
 		viper.SetConfigFile(*configFlag)
@@ -76,6 +72,11 @@ func main() {
 			log.Fatal(err)
 		}
 		viper.SetConfigFile(configPath)
+	}
+
+	if *printConfigPath {
+		fmt.Println(viper.ConfigFileUsed())
+		return
 	}
 
 	log.Infoln("Starting putio-sync version", versionString())
