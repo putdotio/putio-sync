@@ -33,16 +33,15 @@ var (
 // TODO Add debug flag to config
 
 var (
-	versionFlag = flag.Bool("version", false, "print program version")
-	debugFlag   = flag.Bool("debug", false, "enable debug logs")
-	configFlag  = flag.String("config", "", "path of config file")
-	username    = flag.String("username", "", "put.io account username")
-	password    = flag.String("password", "", "put.io account password")
-	dryrun      = flag.Bool("dryrun", false, "do not make changes on filesystems")
-	repeat      = flag.Duration("repeat", 0, "sync repeatedly, pause given duration between syncs")
-	server      = flag.String("server", "", "listen address for HTTP API")
-
+	versionFlag     = flag.Bool("version", false, "print program version")
+	debugFlag       = flag.Bool("debug", false, "enable debug logs")
+	configFlag      = flag.String("config", "", "path of config file")
 	printConfigPath = flag.Bool("print-config-path", false, "print config path")
+	username        = flag.String("username", "", "put.io account username")
+	password        = flag.String("password", "", "put.io account password")
+	dryrun          = flag.Bool("dryrun", false, "do not make changes on filesystems")
+	repeat          = flag.Duration("repeat", 0, "sync repeatedly, pause given duration between syncs")
+	server          = flag.String("server", "", "listen address for HTTP API")
 )
 
 var (
