@@ -28,9 +28,10 @@ var (
 	date    = ""
 )
 
-// TODO Watch fs events for files larger than 4M
 // TODO Move Uploader inside go-putio pkg
-// TODO Add debug flag to config
+// TODO Watch fs events for uploading files larger than 4M
+// TODO Watch fs events in local root
+// TODO Watch remote file events
 
 var (
 	versionFlag     = flag.Bool("version", false, "print program version")
