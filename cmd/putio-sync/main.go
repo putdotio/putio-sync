@@ -29,6 +29,8 @@ var (
 )
 
 // TODO Watch fs events for files larger than 4M
+// TODO Move Uploader inside go-putio pkg
+// TODO Add debug flag to config
 
 var (
 	versionFlag = flag.Bool("version", false, "print program version")
@@ -77,14 +79,18 @@ func readConfig(configPath string, mustExist bool) error {
 	return nil
 }
 
+func versionString() string {
+	if len(commit) > 7 {
+		commit = commit[:7]
+	}
+	return fmt.Sprintf("%s (%s) [%s]", version, commit, date)
+}
+
 func main() {
 	var err error
 	flag.Parse()
 	if *versionFlag {
-		if len(commit) > 7 {
-			commit = commit[:7]
-		}
-		fmt.Printf("%s (%s) [%s]\n", version, commit, date)
+		fmt.Println(versionString())
 		return
 	}
 	if *debugFlag {
@@ -102,6 +108,7 @@ func main() {
 		fmt.Println(configPath)
 		return
 	}
+	log.Infoln("Starting putio-sync version", versionString())
 	log.Infof("Using config file %q", configPath)
 	if err = readConfig(configPath, *configFlag != ""); err != nil {
 		log.Fatal(err)
