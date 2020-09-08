@@ -13,7 +13,6 @@ import (
 	"github.com/putdotio/putio-sync/v2/internal/auth"
 	"github.com/putdotio/putio-sync/v2/internal/dircache"
 	"github.com/putdotio/putio-sync/v2/internal/tmpdir"
-	"github.com/putdotio/putio-sync/v2/internal/tus"
 	"github.com/putdotio/putio-sync/v2/internal/walker"
 	"go.etcd.io/bbolt"
 )
@@ -29,13 +28,11 @@ var ErrInvalidCredentials = errors.New("invalid credentials")
 var (
 	cfg            Config
 	db             *bbolt.DB
-	token          string
 	client         *putio.Client
 	localPath      string
 	remoteFolderID int64
 	dirCache       *dircache.DirCache
 	tempDirPath    string
-	uploader       *tus.Uploader
 	syncing        bool
 	syncStatus     = "Starting sync..."
 )
@@ -107,7 +104,7 @@ REPEAT_LOOP:
 
 func syncOnce(ctx context.Context) error {
 	var err error
-	token, client, err = auth.Authenticate(ctx, httpClient, defaultTimeout, cfg.Username, cfg.Password)
+	client, err = auth.Authenticate(ctx, httpClient, defaultTimeout, cfg.Username, cfg.Password)
 	if err != nil {
 		return err
 	}
@@ -120,8 +117,6 @@ func syncOnce(ctx context.Context) error {
 		return err
 	}
 	dirCache = dircache.New(client, defaultTimeout, remoteFolderID)
-	uploader = tus.NewUploader(httpClient, defaultTimeout, token)
-
 	return syncRoots(ctx)
 }
 

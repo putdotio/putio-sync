@@ -37,7 +37,7 @@ func (d *uploadJob) tryResume(ctx context.Context) bool {
 	if d.state.LocalInode != in {
 		return false
 	}
-	offset, err := uploader.GetOffset(ctx, d.state.UploadURL)
+	offset, err := client.Upload.GetOffset(ctx, d.state.UploadURL)
 	if err != nil {
 		return false
 	}
@@ -57,7 +57,7 @@ func (d *uploadJob) Run(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-		location, err := uploader.CreateUpload(ctx, filename, parentID, d.localFile.Info().Size())
+		location, err := client.Upload.CreateUpload(ctx, filename, parentID, d.localFile.Info().Size())
 		if err != nil {
 			return err
 		}
@@ -84,7 +84,7 @@ func (d *uploadJob) Run(ctx context.Context) error {
 	}
 	pr := progress.New(f, d.state.Offset, d.state.Size, d.String())
 	pr.Start()
-	fileID, crc32, err := uploader.SendFile(ctx, pr, d.state.UploadURL, d.state.Offset)
+	fileID, crc32, err := client.Upload.SendFile(ctx, pr, d.state.UploadURL, d.state.Offset)
 	pr.Stop()
 	if err != nil {
 		return err

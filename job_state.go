@@ -26,7 +26,7 @@ func (j *deleteStateJob) Run(ctx context.Context) error {
 		}
 	}
 	if j.state.UploadURL != "" {
-		err := uploader.TerminateUpload(ctx, j.state.UploadURL)
+		err := client.Upload.TerminateUpload(ctx, j.state.UploadURL)
 		if err != nil {
 			log.Errorln("cannot remove upload:", err.Error())
 		}

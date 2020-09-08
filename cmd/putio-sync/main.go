@@ -28,7 +28,6 @@ var (
 	date    = ""
 )
 
-// TODO Move Uploader inside go-putio pkg
 // TODO Watch fs events for uploading files larger than 4M
 // TODO Watch fs events in local root
 // TODO Watch remote file events
