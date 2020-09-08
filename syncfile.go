@@ -6,6 +6,7 @@ import (
 
 	"github.com/putdotio/go-putio"
 	"github.com/putdotio/putio-sync/v2/internal/walker"
+	"golang.org/x/text/unicode/norm"
 )
 
 type iLocalFile interface {
@@ -54,6 +55,7 @@ func (f *syncFile) String() string {
 func groupFiles(states []stateType, localFiles []*walker.LocalFile, remoteFiles []*walker.RemoteFile) map[string]*syncFile {
 	m := make(map[string]*syncFile)
 	initSyncFile := func(relpath string) *syncFile {
+		relpath = norm.NFC.String(relpath)
 		sf, ok := m[relpath]
 		if ok {
 			return sf
