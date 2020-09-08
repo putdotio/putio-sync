@@ -6,7 +6,7 @@ require (
 	github.com/adrg/xdg v0.2.1
 	github.com/cenkalti/log v1.0.0
 	github.com/paulbellamy/ratecounter v0.2.0
-	github.com/putdotio/go-putio v1.3.2
+	github.com/putdotio/go-putio v1.5.0
 	github.com/spf13/viper v1.7.1
 	github.com/stretchr/testify v1.6.1 // indirect
 	go.etcd.io/bbolt v1.3.5

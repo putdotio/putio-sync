@@ -17,9 +17,10 @@ import (
 )
 
 const (
-	tokenURL     = "https://api.put.io/v2/oauth2/authorizations/clients/" // nolint: gosec
-	clientID     = "4785"
-	clientSecret = "YGRIVM3BKAPGTYCR7PEC" // nolint: gosec
+	tokenURL      = "https://api.put.io/v2/oauth2/authorizations/clients/" // nolint: gosec
+	clientID      = "4785"
+	clientSecret  = "YGRIVM3BKAPGTYCR7PEC" // nolint: gosec
+	clientTimeout = 10 * time.Second
 )
 
 var ErrInvalidCredentials = errors.New("invalid credentials")
@@ -98,5 +99,7 @@ func newClient(ctx context.Context, httpClient *http.Client, token string) *puti
 	tokenSource := oauth2.StaticTokenSource(oauthToken)
 	clientCtx := context.WithValue(ctx, oauth2.HTTPClient, httpClient)
 	oauthClient := oauth2.NewClient(clientCtx, tokenSource)
-	return putio.NewClient(oauthClient)
+	client := putio.NewClient(oauthClient)
+	client.Timeout = clientTimeout
+	return client
 }
