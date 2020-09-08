@@ -183,6 +183,7 @@ func syncRoots(ctx context.Context) error {
 		}
 		err = job.Run(ctx)
 		if err != nil {
+			syncStatus = "Error: " + err.Error()
 			return err
 		}
 	}
