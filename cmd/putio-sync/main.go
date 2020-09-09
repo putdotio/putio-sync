@@ -83,10 +83,7 @@ func main() {
 
 	viper.AutomaticEnv()
 	err := viper.ReadInConfig()
-	if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-		err = nil
-	}
-	if err != nil {
+	if err != nil && !os.IsNotExist(err) {
 		log.Fatal(err)
 	}
 	setConfigValues()
