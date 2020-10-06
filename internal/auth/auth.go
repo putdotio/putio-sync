@@ -25,11 +25,11 @@ const (
 
 var ErrInvalidCredentials = errors.New("invalid credentials")
 
-func Authenticate(ctx context.Context, httpClient *http.Client, timeout time.Duration, username, password string) (client *putio.Client, err error) {
+func Authenticate(ctx context.Context, httpClient *http.Client, timeout time.Duration, username, password string) (token string, client *putio.Client, err error) {
 	if strings.HasPrefix(password, "token/") {
 		// User may use a token instead of password.
 		log.Infof("Validating authentication token")
-		token := password[6:]
+		token = password[6:]
 		client = newClient(ctx, httpClient, token)
 		authCtx, cancel := context.WithTimeout(ctx, timeout)
 		defer cancel()
@@ -89,7 +89,8 @@ func Authenticate(ctx context.Context, httpClient *http.Client, timeout time.Dur
 		return
 	}
 
-	client = newClient(ctx, httpClient, tokenResponse.AccessToken)
+	token = tokenResponse.AccessToken
+	client = newClient(ctx, httpClient, token)
 	return
 }
 

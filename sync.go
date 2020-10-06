@@ -13,6 +13,7 @@ import (
 	"github.com/putdotio/putio-sync/v2/internal/auth"
 	"github.com/putdotio/putio-sync/v2/internal/dircache"
 	"github.com/putdotio/putio-sync/v2/internal/tmpdir"
+	"github.com/putdotio/putio-sync/v2/internal/updates"
 	"github.com/putdotio/putio-sync/v2/internal/walker"
 	"go.etcd.io/bbolt"
 )
@@ -28,7 +29,9 @@ var ErrInvalidCredentials = errors.New("invalid credentials")
 var (
 	cfg            Config
 	db             *bbolt.DB
+	token          string
 	client         *putio.Client
+	notifier       = updates.NewNotifier("wss://socket.put.io/socket/sockjs/websocket", 10*time.Second, 5*time.Second)
 	localPath      string
 	remoteFolderID int64
 	dirCache       *dircache.DirCache
@@ -89,6 +92,7 @@ REPEAT_LOOP:
 		}
 		select {
 		case <-time.After(cfg.Repeat):
+		case <-notifier.HasUpdates:
 		case <-ctx.Done():
 			break REPEAT_LOOP
 		}
@@ -104,7 +108,7 @@ REPEAT_LOOP:
 
 func syncOnce(ctx context.Context) error {
 	var err error
-	client, err = auth.Authenticate(ctx, httpClient, defaultTimeout, cfg.Username, cfg.Password)
+	token, client, err = auth.Authenticate(ctx, httpClient, defaultTimeout, cfg.Username, cfg.Password)
 	if err != nil {
 		return err
 	}
@@ -117,6 +121,10 @@ func syncOnce(ctx context.Context) error {
 		return err
 	}
 	dirCache = dircache.New(client, defaultTimeout, remoteFolderID)
+	if cfg.Repeat != 0 {
+		notifier.SetToken(token)
+		notifier.Start()
+	}
 	return syncRoots(ctx)
 }
 
