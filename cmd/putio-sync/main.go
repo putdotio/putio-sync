@@ -29,7 +29,6 @@ var (
 )
 
 // TODO Watch fs events for uploading files larger than 4M
-// TODO Watch fs events in local root
 
 var (
 	versionFlag     = flag.Bool("version", false, "print program version")

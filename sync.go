@@ -15,6 +15,7 @@ import (
 	"github.com/putdotio/putio-sync/v2/internal/tmpdir"
 	"github.com/putdotio/putio-sync/v2/internal/updates"
 	"github.com/putdotio/putio-sync/v2/internal/walker"
+	"github.com/putdotio/putio-sync/v2/internal/watcher"
 	"go.etcd.io/bbolt"
 )
 
@@ -32,6 +33,7 @@ var (
 	token          string
 	client         *putio.Client
 	notifier       = updates.NewNotifier("wss://socket.put.io/socket/sockjs/websocket", 10*time.Second, 5*time.Second)
+	watcherUpdates chan struct{}
 	localPath      string
 	remoteFolderID int64
 	dirCache       *dircache.DirCache
@@ -93,6 +95,9 @@ REPEAT_LOOP:
 		select {
 		case <-time.After(cfg.Repeat):
 		case <-notifier.HasUpdates:
+			log.Infoln("Changes detected at remote filesystem")
+		case <-watcherUpdates:
+			log.Infoln("Changes detected at local filesystem")
 		case <-ctx.Done():
 			break REPEAT_LOOP
 		}
@@ -124,6 +129,9 @@ func syncOnce(ctx context.Context) error {
 	if cfg.Repeat != 0 {
 		notifier.SetToken(token)
 		notifier.Start()
+	}
+	if watcherUpdates == nil {
+		watcherUpdates = watcher.Watch(ctx, localPath)
 	}
 	return syncRoots(ctx)
 }
