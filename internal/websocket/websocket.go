@@ -23,7 +23,7 @@ func New(wsURL string) *Websocket {
 }
 
 func (w *Websocket) Connect(handshakeTimeout time.Duration) error {
-	log.Debugf("connecting to websocket: %s", w.url)
+	log.Debugf("Connecting to websocket: %s", w.url)
 	dialer := &websocket.Dialer{
 		Proxy:            http.ProxyFromEnvironment,
 		HandshakeTimeout: handshakeTimeout,
@@ -32,7 +32,7 @@ func (w *Websocket) Connect(handshakeTimeout time.Duration) error {
 	if err != nil {
 		return err
 	}
-	log.Debugf("connected to websocket: %s", w.url)
+	log.Debugf("Connected to websocket: %s", w.url)
 	w.conn = conn
 	return nil
 }
