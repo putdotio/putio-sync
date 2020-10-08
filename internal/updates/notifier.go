@@ -136,24 +136,15 @@ func (s *Notifier) reader() {
 		return
 	}
 
-	const d = 5 * time.Second
-	var t *time.Timer
 	for {
 		msg, err := ws.Recv(0)
 		if err != nil {
 			log.Errorln("websocket receive error:", err.Error())
-			if t != nil {
-				t.Stop()
-			}
 			return
 		}
 		switch msg.Type {
 		case "file_create", "file_update", "file_delete":
-			if t != nil {
-				t.Reset(d)
-			} else {
-				t = time.AfterFunc(d, s.notifyUpdate)
-			}
+			s.notifyUpdate()
 		}
 	}
 }
