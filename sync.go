@@ -96,8 +96,10 @@ REPEAT_LOOP:
 		case <-time.After(cfg.Repeat):
 		case <-notifier.HasUpdates:
 			log.Infoln("Changes detected at remote filesystem")
+			drainChannels(notifier.HasUpdates, watcherUpdates)
 		case <-watcherUpdates:
 			log.Infoln("Changes detected at local filesystem")
+			drainChannels(notifier.HasUpdates, watcherUpdates)
 		case <-ctx.Done():
 			break REPEAT_LOOP
 		}
@@ -202,4 +204,23 @@ func syncRoots(ctx context.Context) error {
 		}
 	}
 	return nil
+}
+
+func drainChannels(chs ...chan struct{}) {
+	for _, ch := range chs {
+		drainChannel(ch)
+	}
+}
+
+func drainChannel(ch chan struct{}) {
+	for {
+		select {
+		case _, ok := <-ch:
+			if !ok {
+				return
+			}
+		default:
+			return
+		}
+	}
 }
