@@ -8,6 +8,8 @@ import (
 	"github.com/fsnotify/fsevents"
 )
 
+const mask = fsevents.ItemCreated | fsevents.ItemRemoved | fsevents.ItemRenamed | fsevents.ItemModified | fsevents.ItemInodeMetaMod
+
 func Watch(ctx context.Context, dir string) (chan struct{}, error) {
 	return retry(ctx, dir, watch)
 }
@@ -33,8 +35,6 @@ func watch(ctx context.Context, dir string) (chan struct{}, error) {
 	go processEvents(ctx, es, ch)
 	return ch, nil
 }
-
-const mask = fsevents.ItemCreated | fsevents.ItemRemoved | fsevents.ItemRenamed
 
 func processEvents(ctx context.Context, es *fsevents.EventStream, ch chan struct{}) {
 	defer log.Debugln("end process events")

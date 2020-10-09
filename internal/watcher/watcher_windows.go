@@ -12,7 +12,7 @@ import (
 // Buffer size cannot exceed 64K
 const bufferSize = 32 << 10
 
-const mask = syscall.FILE_NOTIFY_CHANGE_SIZE | syscall.FILE_NOTIFY_CHANGE_FILE_NAME | syscall.FILE_NOTIFY_CHANGE_DIR_NAME
+const mask = syscall.FILE_NOTIFY_CHANGE_SIZE | syscall.FILE_NOTIFY_CHANGE_FILE_NAME | syscall.FILE_NOTIFY_CHANGE_DIR_NAME | syscall.FILE_NOTIFY_CHANGE_LAST_WRITE
 
 func Watch(ctx context.Context, dir string) (chan struct{}, error) {
 	return retry(ctx, dir, watch)
