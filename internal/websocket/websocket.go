@@ -55,10 +55,7 @@ func (w *Websocket) Auth(token string, timeout time.Duration) error {
 }
 
 type IncomingMessage struct {
-	Type  string `json:"type"`
-	Value struct {
-		ParentID int64 `json:"parent_id"`
-	} `json:"value"`
+	Type string `json:"type"`
 }
 
 func (w *Websocket) Recv(timeout time.Duration) (msg IncomingMessage, err error) {
