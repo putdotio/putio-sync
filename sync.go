@@ -131,7 +131,10 @@ func syncOnce(ctx context.Context) error {
 		notifier.Start()
 	}
 	if watcherUpdates == nil {
-		watcherUpdates = watcher.Watch(ctx, localPath)
+		watcherUpdates, err = watcher.Watch(ctx, localPath)
+		if err != nil {
+			log.Error(err)
+		}
 	}
 	return syncRoots(ctx)
 }

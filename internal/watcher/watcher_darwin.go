@@ -8,12 +8,12 @@ import (
 	"github.com/fsnotify/fsevents"
 )
 
-func Watch(ctx context.Context, dir string) chan struct{} {
+func Watch(ctx context.Context, dir string) (chan struct{}, error) {
 	ch := make(chan struct{}, 1)
 
 	dev, err := fsevents.DeviceForPath(dir)
 	if err != nil {
-		log.Fatalf("Failed to retrieve device for path: %v", err)
+		return nil, err
 	}
 	log.Debugln("Device:", dev)
 	log.Debugln("Event ID:", fsevents.EventIDForDeviceBeforeTime(dev, time.Now()))
@@ -27,8 +27,7 @@ func Watch(ctx context.Context, dir string) chan struct{} {
 
 	es.Start()
 	go processEvents(ctx, es, ch)
-	log.Debugln("returning ch")
-	return ch
+	return ch, nil
 }
 
 const mask = fsevents.ItemCreated | fsevents.ItemRemoved | fsevents.ItemRenamed
@@ -87,5 +86,5 @@ func logEvent(event fsevents.Event) {
 			note += description + " "
 		}
 	}
-	log.Debugf("EventID: %d Path: %s Flags: %s", event.ID, event.Path, note)
+	log.Debugf("Event ID: %d Path: %s Flags: %s", event.ID, event.Path, note)
 }
