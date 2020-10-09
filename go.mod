@@ -6,6 +6,7 @@ require (
 	github.com/adrg/xdg v0.2.1
 	github.com/cenkalti/log v1.0.0
 	github.com/fsnotify/fsevents v0.1.1
+	github.com/fsnotify/fsnotify v1.4.9
 	github.com/gorilla/websocket v1.4.2
 	github.com/paulbellamy/ratecounter v0.2.0
 	github.com/putdotio/go-putio v1.5.0
