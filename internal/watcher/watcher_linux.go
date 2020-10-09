@@ -10,6 +10,10 @@ import (
 const mask = fsnotify.Create | fsnotify.Write | fsnotify.Remove | fsnotify.Rename
 
 func Watch(ctx context.Context, dir string) (chan struct{}, error) {
+	return retry(ctx, dir, watch)
+}
+
+func watch(ctx context.Context, dir string) (chan struct{}, error) {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		return nil, err
@@ -28,6 +32,7 @@ func Watch(ctx context.Context, dir string) (chan struct{}, error) {
 
 func processEvents(ctx context.Context, watcher *fsnotify.Watcher, ch chan struct{}) {
 	defer log.Debugln("end process events")
+	defer close(ch)
 	defer watcher.Close()
 	for {
 		select {

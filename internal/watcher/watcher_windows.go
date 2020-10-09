@@ -4,7 +4,6 @@ import (
 	"context"
 	"os"
 	"syscall"
-	"time"
 	"unsafe"
 
 	"github.com/cenkalti/log"
@@ -16,44 +15,7 @@ const bufferSize = 32 << 10
 const mask = syscall.FILE_NOTIFY_CHANGE_SIZE | syscall.FILE_NOTIFY_CHANGE_FILE_NAME | syscall.FILE_NOTIFY_CHANGE_DIR_NAME
 
 func Watch(ctx context.Context, dir string) (chan struct{}, error) {
-	in, err := watch(ctx, dir)
-	if err != nil {
-		return nil, err
-	}
-
-	// watch started successfully. Wait for channel close event for errors and restart watching.
-	out := make(chan struct{}, 1)
-	go func() {
-		for {
-			select {
-			case event, ok := <-in:
-				if !ok {
-					in, err = watch(ctx, dir)
-					if err != nil {
-						log.Error(err)
-						select {
-						case <-time.After(time.Second):
-						case <-ctx.Done():
-							return
-						}
-					}
-					break
-				}
-
-				// Forward the event to returned channel.
-				select {
-				case out <- event:
-				case <-ctx.Done():
-					return
-				default:
-				}
-			case <-ctx.Done():
-				return
-			}
-		}
-	}()
-
-	return out, nil
+	return retry(ctx, dir, watch)
 }
 
 func watch(ctx context.Context, dir string) (chan struct{}, error) {

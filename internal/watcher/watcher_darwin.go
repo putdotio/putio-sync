@@ -9,6 +9,10 @@ import (
 )
 
 func Watch(ctx context.Context, dir string) (chan struct{}, error) {
+	return retry(ctx, dir, watch)
+}
+
+func watch(ctx context.Context, dir string) (chan struct{}, error) {
 	ch := make(chan struct{}, 1)
 
 	dev, err := fsevents.DeviceForPath(dir)
@@ -34,11 +38,15 @@ const mask = fsevents.ItemCreated | fsevents.ItemRemoved | fsevents.ItemRenamed
 
 func processEvents(ctx context.Context, es *fsevents.EventStream, ch chan struct{}) {
 	defer log.Debugln("end process events")
+	defer close(ch)
 	defer es.Stop()
 	events := es.Events
 	for {
 		select {
-		case msg := <-events:
+		case msg, ok := <-events:
+			if !ok {
+				return
+			}
 			for _, event := range msg {
 				logEvent(event)
 				if event.Flags&mask != 0 {
