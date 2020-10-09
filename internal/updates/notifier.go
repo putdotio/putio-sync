@@ -90,7 +90,9 @@ func (s *Notifier) writer() {
 				log.Errorln("websocket send error:", err.Error())
 				ws.Close()
 				ws = nil
+				break
 			}
+			s.notifyUpdate()
 		case <-s.closeC:
 			if ws != nil {
 				ws.Close()
