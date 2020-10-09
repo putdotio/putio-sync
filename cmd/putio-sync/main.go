@@ -79,6 +79,7 @@ func main() {
 	log.Infoln("Starting putio-sync version", versionString())
 	log.Infof("Using config file %q", viper.ConfigFileUsed())
 
+	viper.SetEnvPrefix("PUTIO")
 	viper.AutomaticEnv()
 	err := viper.ReadInConfig()
 	if err != nil && !os.IsNotExist(err) {
