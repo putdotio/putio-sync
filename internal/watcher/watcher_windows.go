@@ -78,24 +78,17 @@ func watch(ctx context.Context, dir string) (chan struct{}, error) {
 	if err != nil {
 		return nil, os.NewSyscallError("CreateFile", err)
 	}
-	defer func() {
-		if err != nil {
-			_ = syscall.CloseHandle(dh)
-		}
-	}()
 
 	cph, err := syscall.CreateIoCompletionPort(dh, 0, 0, 0)
 	if err != nil {
+		_ = syscall.CloseHandle(dh)
 		return nil, os.NewSyscallError("CreateIoCompletionPort", err)
 	}
-	defer func() {
-		if err != nil {
-			_ = syscall.CloseHandle(cph)
-		}
-	}()
 
 	err = readDirChanges(dh, buffer, &overlapped)
 	if err != nil {
+		_ = syscall.CloseHandle(dh)
+		_ = syscall.CloseHandle(cph)
 		return nil, os.NewSyscallError("ReadDirectoryChanges", err)
 	}
 
