@@ -100,7 +100,7 @@ func main() {
 	var configError *putiosync.ConfigError
 	if errors.As(err, &configError) {
 		fmt.Fprintln(os.Stderr, configError.Reason)
-		os.Exit(exitCodeConfigError)
+		os.Exit(exitCodeConfigError) // nolint: gocritic
 		return
 	}
 	if errors.Is(err, putiosync.ErrInvalidCredentials) {

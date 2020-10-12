@@ -115,15 +115,31 @@ func syncWithState(sf *syncFile, filesByRemoteID map[int64]*syncFile, filesByIno
 			}
 			if sf.local.Info().IsDir() || sf.remote.Info().IsDir() {
 				// One of the sides is a file
-				log.Warningf("Conflicting file, skipping sync: %q", sf.relpath)
+				log.Warningf("Conflicting file, one side is a directory, skipping sync: %q", sf.relpath)
 				return nil
 			}
-			if sf.state.Size != sf.local.Info().Size() || sf.state.Size != sf.remote.PutioFile().Size {
-				log.Warningf("File sizes differ, skipping sync: %q", sf.relpath)
+			if sf.state.Size != sf.local.Info().Size() && sf.state.Size != sf.remote.PutioFile().Size {
+				log.Warningf("Conflicting file, both files have changed, skipping sync: %q", sf.relpath)
 				return nil
+			}
+			if sf.state.Size != sf.local.Info().Size() {
+				// Local file has changed
+				return []iJob{
+					&uploadJob{
+						localFile: sf.local,
+					},
+				}
+			}
+			if sf.state.Size != sf.remote.PutioFile().Size {
+				// Remote file has changed
+				return []iJob{
+					&downloadJob{
+						remoteFile: sf.remote,
+					},
+				}
 			}
 			// Assume files didn't change if their size didn't change
-			// This is the hottest case that is executed most because once all files are in sync no operations will be done later.
+			// This is the most common case that is executed most because once all files are in sync no operations will be done later.
 			return nil
 		case sf.local != nil && sf.remote == nil:
 			// File missing in remote side, could be deleted or moved elsewhere

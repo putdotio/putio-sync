@@ -40,13 +40,13 @@ func (w *Walker) Walk(ctx context.Context) (localFiles []*LocalFile, remoteFiles
 		}
 		select {
 		case files := <-localFilesC:
-			log.Info("Fetched local filesystem tree")
+			log.Debug("Fetched local filesystem tree")
 			localFiles = make([]*LocalFile, 0, len(files))
 			for _, f := range files {
 				localFiles = append(localFiles, f.(*LocalFile))
 			}
 		case files := <-remoteFilesC:
-			log.Info("Fetched remote filesystem tree")
+			log.Debug("Fetched remote filesystem tree")
 			remoteFiles = make([]*RemoteFile, 0, len(files))
 			for _, f := range files {
 				remoteFiles = append(remoteFiles, f.(*RemoteFile))

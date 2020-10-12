@@ -57,7 +57,7 @@ func (d *uploadJob) Run(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-		location, err := client.Upload.CreateUpload(ctx, filename, parentID, d.localFile.Info().Size())
+		location, err := client.Upload.CreateUpload(ctx, filename, parentID, d.localFile.Info().Size(), true)
 		if err != nil {
 			return err
 		}

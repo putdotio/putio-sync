@@ -179,7 +179,7 @@ func syncRoots(ctx context.Context) error {
 	for _, job := range jobs {
 		log.Debugln("Job:", job.String())
 	}
-	dirCache.Debug()
+	// dirCache.Debug()
 
 	// Run all jobs one by one
 	if cfg.DryRun {
