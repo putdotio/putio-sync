@@ -81,7 +81,7 @@ func Sync(ctx context.Context, config Config) error {
 			return ErrInvalidCredentials
 		}
 		if err != nil {
-			if cfg.Repeat == 0 {
+			if cfg.Once {
 				return err
 			}
 			log.Error(err)
@@ -118,7 +118,7 @@ func syncOnce(ctx context.Context) error {
 		return err
 	}
 	dirCache = dircache.New(client, defaultTimeout, remoteFolderID)
-	if cfg.Repeat != 0 {
+	if cfg.Once {
 		notifier.SetToken(token)
 		notifier.Start()
 	}
@@ -197,7 +197,7 @@ func syncRoots(ctx context.Context) error {
 }
 
 func waitNextSync(ctx context.Context) bool {
-	if cfg.Repeat == 0 {
+	if cfg.Once {
 		return false
 	}
 	var tc <-chan time.Time

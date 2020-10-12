@@ -2,7 +2,6 @@ package putiosync
 
 import (
 	"strings"
-	"time"
 
 	"github.com/knadh/koanf"
 	"github.com/knadh/koanf/parsers/toml"
@@ -32,10 +31,10 @@ type Config struct {
 	Password string
 	// Do not make changes on filesystems. Only calculate what needs to be done.
 	DryRun bool
-	// Sync repeatedly. Pause given duration between syncs.
-	// If value is greater than zero, Sync function does not return on synchronization errors.
-	// However, it retruns on authentication error since there is no point in retrying in this case.
-	Repeat time.Duration
+	// Stop after first sync operation.
+	// Otherwise, sync operation is repeated continuously while waiting for some duration between syncs.
+	// If there is authentication error, Sync also returns since there is no point in retrying in this case.
+	Once bool
 	// Listen address for HTTP server.
 	// The server has an endpoint for getting the status of the sync operation.
 	Server string

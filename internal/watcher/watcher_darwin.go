@@ -21,8 +21,6 @@ func watch(ctx context.Context, dir string) (chan string, error) {
 	if err != nil {
 		return nil, err
 	}
-	log.Debugln("Device:", dev)
-	log.Debugln("Event ID:", fsevents.EventIDForDeviceBeforeTime(dev, time.Now()))
 
 	es := &fsevents.EventStream{
 		Paths:   []string{dir},
