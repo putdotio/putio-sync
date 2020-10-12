@@ -30,5 +30,4 @@ Then program is going to sync the contents of these folders:
 - **/putio-sync** in your Put.io account
 
 The folders are created if they don't exist.
-The program exists after sync.
-You can run it again whenever you want to sync.
+Files will be synced periodically or when a change has been detected.
