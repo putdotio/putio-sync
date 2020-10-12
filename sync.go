@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
+	"runtime"
 	"time"
 
 	"github.com/adrg/xdg"
@@ -205,9 +206,15 @@ func waitNextSync(ctx context.Context) bool {
 			tc = time.After(5 * time.Second)
 		}
 	}
+	var d time.Duration
+	if notifier.Connected() && runtime.GOOS != "linux" {
+		d = 2 * time.Hour
+	} else {
+		d = 15 * time.Minute
+	}
 	for {
 		select {
-		case <-time.After(cfg.Repeat):
+		case <-time.After(d):
 			return true
 		case name := <-notifier.HasUpdates:
 			log.Infof("Change detected at remote filesystem: %q", name)

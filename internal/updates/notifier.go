@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"strconv"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/cenkalti/log"
@@ -19,9 +20,10 @@ type Notifier struct {
 	newConnectionC   chan *websocket.Websocket
 	closeC           chan struct{}
 
-	m       sync.Mutex
-	token   string
-	started bool
+	m         sync.Mutex
+	token     string
+	started   bool
+	connected int32
 }
 
 func NewNotifier(wsURL string, handshakeTimeout, writeTimeout time.Duration) *Notifier {
@@ -65,6 +67,10 @@ func (s *Notifier) SetToken(token string) {
 	s.m.Lock()
 	s.token = token
 	s.m.Unlock()
+}
+
+func (s *Notifier) Connected() bool {
+	return atomic.LoadInt32(&s.connected) == 1
 }
 
 func (s *Notifier) notifyUpdate(name string) {
@@ -118,6 +124,9 @@ func (s *Notifier) reader() {
 		log.Errorln("websocket connect error:", err.Error())
 		return
 	}
+
+	atomic.StoreInt32(&s.connected, 1)
+	defer func() { atomic.StoreInt32(&s.connected, 0) }()
 
 	// Make sure connection is closed on return
 	closed := make(chan struct{})
