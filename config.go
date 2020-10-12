@@ -3,6 +3,11 @@ package putiosync
 import (
 	"strings"
 	"time"
+
+	"github.com/knadh/koanf"
+	"github.com/knadh/koanf/parsers/toml"
+	"github.com/knadh/koanf/providers/env"
+	"github.com/knadh/koanf/providers/file"
 )
 
 type ConfigError struct {
@@ -46,4 +51,19 @@ func (c *Config) validate() error {
 		return newConfigError("empty password")
 	}
 	return nil
+}
+
+func (c *Config) Read(configPath string) error {
+	k := koanf.New(".")
+	err := k.Load(file.Provider(configPath), toml.Parser())
+	if err != nil {
+		return err
+	}
+	err = k.Load(env.Provider("PUTIO_", ".", func(s string) string {
+		return strings.ReplaceAll(strings.TrimPrefix(s, "PUTIO_"), "_", ".")
+	}), nil)
+	if err != nil {
+		return err
+	}
+	return k.Unmarshal("", c)
 }

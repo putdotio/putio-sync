@@ -13,7 +13,6 @@ import (
 	"github.com/adrg/xdg"
 	"github.com/cenkalti/log"
 	putiosync "github.com/putdotio/putio-sync/v2"
-	"github.com/spf13/viper"
 )
 
 const (
@@ -38,15 +37,6 @@ var (
 
 var config putiosync.Config
 
-func setConfigValues() {
-	config.Debug = viper.GetBool("debug")
-	config.Username = viper.GetString("username")
-	config.Password = viper.GetString("password")
-	config.DryRun = viper.GetBool("dryrun")
-	config.Repeat = viper.GetDuration("repeat")
-	config.Server = viper.GetString("server")
-}
-
 func versionString() string {
 	if len(commit) > 7 {
 		commit = commit[:7]
@@ -55,37 +45,35 @@ func versionString() string {
 }
 
 func main() {
+	var err error
 	flag.Parse()
 	if *versionFlag {
 		fmt.Println(versionString())
 		return
 	}
 
+	var configPath string
 	if *configFlag != "" {
-		viper.SetConfigFile(*configFlag)
+		configPath = *configFlag
 	} else {
-		configPath, err := xdg.ConfigFile(filepath.Join("putio-sync", "config.toml"))
+		configPath, err = xdg.ConfigFile(filepath.Join("putio-sync", "config.toml"))
 		if err != nil {
 			log.Fatal(err)
 		}
-		viper.SetConfigFile(configPath)
 	}
 
 	if *printConfigPath {
-		fmt.Println(viper.ConfigFileUsed())
+		fmt.Println(configPath)
 		return
 	}
 
 	log.Infoln("Starting putio-sync version", versionString())
-	log.Infof("Using config file %q", viper.ConfigFileUsed())
+	log.Infof("Using config file %q", configPath)
 
-	viper.SetEnvPrefix("PUTIO")
-	viper.AutomaticEnv()
-	err := viper.ReadInConfig()
+	err = config.Read(configPath)
 	if err != nil && !os.IsNotExist(err) {
 		log.Fatal(err)
 	}
-	setConfigValues()
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
