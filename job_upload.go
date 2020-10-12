@@ -7,8 +7,10 @@ import (
 	"os"
 	"path"
 
+	"github.com/cenkalti/log"
 	"github.com/putdotio/putio-sync/v2/internal/inode"
 	"github.com/putdotio/putio-sync/v2/internal/progress"
+	"github.com/putdotio/putio-sync/v2/internal/watcher"
 )
 
 type uploadJob struct {
@@ -73,6 +75,11 @@ func (d *uploadJob) Run(ctx context.Context) error {
 			return err
 		}
 	}
+	modwatch, err := watcher.WatchFileModification(ctx, d.localFile.FullPath())
+	if err != nil {
+		return err
+	}
+	defer modwatch.Stop()
 	f, err := os.Open(d.localFile.FullPath())
 	if err != nil {
 		return err
@@ -84,8 +91,13 @@ func (d *uploadJob) Run(ctx context.Context) error {
 	}
 	pr := progress.New(f, d.state.Offset, d.state.Size, d.String())
 	pr.Start()
-	fileID, crc32, err := client.Upload.SendFile(ctx, pr, d.state.UploadURL, d.state.Offset)
+	fileID, crc32, err := client.Upload.SendFile(modwatch.Context(), pr, d.state.UploadURL, d.state.Offset)
 	pr.Stop()
+	modified := modwatch.Stop()
+	if modified {
+		log.Warningln("File modified while uploading")
+		return nil
+	}
 	if err != nil {
 		return err
 	}
