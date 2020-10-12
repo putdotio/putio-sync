@@ -1,6 +1,8 @@
 package updates
 
 import (
+	"encoding/json"
+	"strconv"
 	"sync"
 	"time"
 
@@ -9,7 +11,7 @@ import (
 )
 
 type Notifier struct {
-	HasUpdates chan struct{}
+	HasUpdates chan string
 
 	url              string
 	handshakeTimeout time.Duration
@@ -24,7 +26,7 @@ type Notifier struct {
 
 func NewNotifier(wsURL string, handshakeTimeout, writeTimeout time.Duration) *Notifier {
 	return &Notifier{
-		HasUpdates:       make(chan struct{}, 1),
+		HasUpdates:       make(chan string, 1),
 		url:              wsURL,
 		handshakeTimeout: handshakeTimeout,
 		writeTimeout:     writeTimeout,
@@ -65,9 +67,9 @@ func (s *Notifier) SetToken(token string) {
 	s.m.Unlock()
 }
 
-func (s *Notifier) notifyUpdate() {
+func (s *Notifier) notifyUpdate(name string) {
 	select {
-	case s.HasUpdates <- struct{}{}:
+	case s.HasUpdates <- name:
 	default:
 	}
 }
@@ -92,7 +94,7 @@ func (s *Notifier) writer() {
 				ws = nil
 				break
 			}
-			s.notifyUpdate()
+			s.notifyUpdate("WEBSOCKET_CONNECTED")
 		case <-s.closeC:
 			if ws != nil {
 				ws.Close()
@@ -146,7 +148,27 @@ func (s *Notifier) reader() {
 		}
 		switch msg.Type {
 		case "file_create", "file_update", "file_delete":
-			s.notifyUpdate()
+			name, err := readName(msg.Value)
+			if err != nil {
+				name = strconv.FormatInt(readID(msg.Value), 10)
+			}
+			s.notifyUpdate(name)
 		}
 	}
+}
+
+func readName(b json.RawMessage) (string, error) {
+	var v struct {
+		Name string `json:"name"`
+	}
+	err := json.Unmarshal(b, &v)
+	return v.Name, err
+}
+
+func readID(b json.RawMessage) int64 {
+	var v struct {
+		ID int64 `json:"id"`
+	}
+	_ = json.Unmarshal(b, &v)
+	return v.ID
 }

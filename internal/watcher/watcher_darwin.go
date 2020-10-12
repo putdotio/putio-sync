@@ -10,12 +10,12 @@ import (
 
 const mask = fsevents.ItemCreated | fsevents.ItemRemoved | fsevents.ItemRenamed | fsevents.ItemModified | fsevents.ItemInodeMetaMod
 
-func Watch(ctx context.Context, dir string) (chan struct{}, error) {
+func Watch(ctx context.Context, dir string) (chan string, error) {
 	return retry(ctx, dir, watch)
 }
 
-func watch(ctx context.Context, dir string) (chan struct{}, error) {
-	ch := make(chan struct{}, 1)
+func watch(ctx context.Context, dir string) (chan string, error) {
+	ch := make(chan string, 1)
 
 	dev, err := fsevents.DeviceForPath(dir)
 	if err != nil {
@@ -36,7 +36,7 @@ func watch(ctx context.Context, dir string) (chan struct{}, error) {
 	return ch, nil
 }
 
-func processEvents(ctx context.Context, es *fsevents.EventStream, ch chan struct{}) {
+func processEvents(ctx context.Context, es *fsevents.EventStream, ch chan string) {
 	defer log.Debugln("end process events")
 	defer close(ch)
 	defer es.Stop()
@@ -51,7 +51,7 @@ func processEvents(ctx context.Context, es *fsevents.EventStream, ch chan struct
 				logEvent(event)
 				if event.Flags&mask != 0 {
 					select {
-					case ch <- struct{}{}:
+					case ch <- event.Path:
 					case <-ctx.Done():
 						return
 					default:

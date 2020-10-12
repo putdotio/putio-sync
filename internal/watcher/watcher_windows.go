@@ -14,11 +14,11 @@ const bufferSize = 32 << 10
 
 const mask = syscall.FILE_NOTIFY_CHANGE_SIZE | syscall.FILE_NOTIFY_CHANGE_FILE_NAME | syscall.FILE_NOTIFY_CHANGE_DIR_NAME | syscall.FILE_NOTIFY_CHANGE_LAST_WRITE
 
-func Watch(ctx context.Context, dir string) (chan struct{}, error) {
+func Watch(ctx context.Context, dir string) (chan string, error) {
 	return retry(ctx, dir, watch)
 }
 
-func watch(ctx context.Context, dir string) (chan struct{}, error) {
+func watch(ctx context.Context, dir string) (chan string, error) {
 	var err error
 	var overlapped syscall.Overlapped
 	buffer := make([]byte, bufferSize)
@@ -57,7 +57,7 @@ func watch(ctx context.Context, dir string) (chan struct{}, error) {
 	done := make(chan struct{}) // will be closed when processEvents ends
 	go closeHandles(ctx, dh, cph, done)
 
-	ch := make(chan struct{}, 1)
+	ch := make(chan string, 1)
 	go processEvents(ctx, dh, cph, buffer, &overlapped, ch, done)
 
 	return ch, nil
@@ -72,7 +72,7 @@ func closeHandles(ctx context.Context, dh, cph syscall.Handle, done chan struct{
 	_ = syscall.CloseHandle(cph)
 }
 
-func processEvents(ctx context.Context, dh, cph syscall.Handle, buffer []byte, overlapped *syscall.Overlapped, ch, done chan struct{}) {
+func processEvents(ctx context.Context, dh, cph syscall.Handle, buffer []byte, overlapped *syscall.Overlapped, ch chan string, done chan struct{}) {
 	defer log.Debugln("end process events")
 	defer close(done)
 	defer close(ch)
@@ -100,7 +100,7 @@ func processEvents(ctx context.Context, dh, cph syscall.Handle, buffer []byte, o
 
 			logEvent(event, name)
 			select {
-			case ch <- struct{}{}:
+			case ch <- name:
 			case <-ctx.Done():
 				return
 			default:

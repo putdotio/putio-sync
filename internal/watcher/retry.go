@@ -7,14 +7,14 @@ import (
 	"github.com/cenkalti/log"
 )
 
-func retry(ctx context.Context, dir string, watchFn func(ctx context.Context, dir string) (chan struct{}, error)) (chan struct{}, error) {
+func retry(ctx context.Context, dir string, watchFn func(ctx context.Context, dir string) (chan string, error)) (chan string, error) {
 	in, err := watchFn(ctx, dir)
 	if err != nil {
 		return nil, err
 	}
 
 	// watch started successfully. Wait for channel close event for errors and restart watching.
-	out := make(chan struct{}, 1)
+	out := make(chan string, 1)
 	go func() {
 		for {
 			select {

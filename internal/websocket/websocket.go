@@ -1,6 +1,7 @@
 package websocket
 
 import (
+	"encoding/json"
 	"errors"
 	"net/http"
 	"time"
@@ -55,7 +56,8 @@ func (w *Websocket) Auth(token string, timeout time.Duration) error {
 }
 
 type IncomingMessage struct {
-	Type string `json:"type"`
+	Type  string          `json:"type"`
+	Value json.RawMessage `json:"value"`
 }
 
 func (w *Websocket) Recv(timeout time.Duration) (msg IncomingMessage, err error) {

@@ -9,11 +9,11 @@ import (
 
 const mask = fsnotify.Create | fsnotify.Write | fsnotify.Remove | fsnotify.Rename
 
-func Watch(ctx context.Context, dir string) (chan struct{}, error) {
+func Watch(ctx context.Context, dir string) (chan string, error) {
 	return retry(ctx, dir, watch)
 }
 
-func watch(ctx context.Context, dir string) (chan struct{}, error) {
+func watch(ctx context.Context, dir string) (chan string, error) {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		return nil, err
@@ -25,12 +25,12 @@ func watch(ctx context.Context, dir string) (chan struct{}, error) {
 		return nil, err
 	}
 
-	ch := make(chan struct{}, 1)
+	ch := make(chan string, 1)
 	go processEvents(ctx, watcher, ch)
 	return ch, nil
 }
 
-func processEvents(ctx context.Context, watcher *fsnotify.Watcher, ch chan struct{}) {
+func processEvents(ctx context.Context, watcher *fsnotify.Watcher, ch chan string) {
 	defer log.Debugln("end process events")
 	defer close(ch)
 	defer watcher.Close()
@@ -43,7 +43,7 @@ func processEvents(ctx context.Context, watcher *fsnotify.Watcher, ch chan struc
 			if event.Op&mask != 0 {
 				logEvent(event)
 				select {
-				case ch <- struct{}{}:
+				case ch <- event.Name:
 				case <-ctx.Done():
 					return
 				default:

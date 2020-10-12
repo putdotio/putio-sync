@@ -33,7 +33,7 @@ var (
 	token          string
 	client         *putio.Client
 	notifier       = updates.NewNotifier("wss://socket.put.io/socket/sockjs/websocket", 10*time.Second, 5*time.Second)
-	watcherUpdates chan struct{}
+	watcherUpdates chan string
 	localPath      string
 	remoteFolderID int64
 	dirCache       *dircache.DirCache
@@ -94,11 +94,11 @@ REPEAT_LOOP:
 		}
 		select {
 		case <-time.After(cfg.Repeat):
-		case <-notifier.HasUpdates:
-			log.Infoln("Changes detected at remote filesystem")
+		case name := <-notifier.HasUpdates:
+			log.Infoln("Change detected at remote filesystem:", name)
 			drainChannels(notifier.HasUpdates, watcherUpdates)
-		case <-watcherUpdates:
-			log.Infoln("Changes detected at local filesystem")
+		case name := <-watcherUpdates:
+			log.Infoln("Change detected at local filesystem:", name)
 			drainChannels(notifier.HasUpdates, watcherUpdates)
 		case <-ctx.Done():
 			break REPEAT_LOOP
@@ -206,13 +206,13 @@ func syncRoots(ctx context.Context) error {
 	return nil
 }
 
-func drainChannels(chs ...chan struct{}) {
+func drainChannels(chs ...chan string) {
 	for _, ch := range chs {
 		drainChannel(ch)
 	}
 }
 
-func drainChannel(ch chan struct{}) {
+func drainChannel(ch chan string) {
 	for {
 		select {
 		case _, ok := <-ch:
