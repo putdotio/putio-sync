@@ -74,7 +74,6 @@ func Sync(ctx context.Context, config Config) error {
 		defer srv.Close()
 	}
 
-REPEAT_LOOP:
 	for {
 		err = syncOnce(ctx)
 		if errors.Is(err, auth.ErrInvalidCredentials) {
@@ -89,19 +88,9 @@ REPEAT_LOOP:
 			syncStatus = "Sync finished successfully"
 			log.Infoln(syncStatus)
 		}
-		if cfg.Repeat == 0 {
+		ok := waitNextSync(ctx)
+		if !ok {
 			break
-		}
-		select {
-		case <-time.After(cfg.Repeat):
-		case name := <-notifier.HasUpdates:
-			log.Infoln("Change detected at remote filesystem:", name)
-			drainChannels(notifier.HasUpdates, watcherUpdates)
-		case name := <-watcherUpdates:
-			log.Infoln("Change detected at local filesystem:", name)
-			drainChannels(notifier.HasUpdates, watcherUpdates)
-		case <-ctx.Done():
-			break REPEAT_LOOP
 		}
 	}
 	if srv != nil {
@@ -204,6 +193,24 @@ func syncRoots(ctx context.Context) error {
 		}
 	}
 	return nil
+}
+
+func waitNextSync(ctx context.Context) bool {
+	if cfg.Repeat == 0 {
+		return false
+	}
+	select {
+	case <-time.After(cfg.Repeat):
+	case name := <-notifier.HasUpdates:
+		log.Infoln("Change detected at remote filesystem:", name)
+		drainChannels(notifier.HasUpdates, watcherUpdates)
+	case name := <-watcherUpdates:
+		log.Infoln("Change detected at local filesystem:", name)
+		drainChannels(notifier.HasUpdates, watcherUpdates)
+	case <-ctx.Done():
+		return false
+	}
+	return true
 }
 
 func drainChannels(chs ...chan string) {
