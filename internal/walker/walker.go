@@ -85,11 +85,15 @@ func (w *Walker) walkOnFolder(ctx context.Context, walker walker) ([]file, error
 		if strings.HasPrefix(file.RelPath(), w.TempDirName) {
 			return nil
 		}
-		if ignoredFiles.MatchString(file.Info().Name()) {
+		if Ignored(file.Info().Name()) {
 			return nil
 		}
 		l = append(l, file)
 		return nil
 	}
 	return l, walker.Walk(fn)
+}
+
+func Ignored(name string) bool {
+	return ignoredFiles.MatchString(name)
 }

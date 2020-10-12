@@ -2,9 +2,11 @@ package watcher
 
 import (
 	"context"
+	"path/filepath"
 	"time"
 
 	"github.com/cenkalti/log"
+	"github.com/putdotio/putio-sync/v2/internal/walker"
 )
 
 func retry(ctx context.Context, dir string, watchFn func(ctx context.Context, dir string) (chan string, error)) (chan string, error) {
@@ -30,6 +32,12 @@ func retry(ctx context.Context, dir string, watchFn func(ctx context.Context, di
 						}
 					}
 					break
+				}
+
+				// This is not the correct place for filtering path names,
+				// but for now it is okay because this `retry` function is used in all implementations.
+				if walker.Ignored(filepath.Base(event)) {
+					continue
 				}
 
 				// Forward the event to returned channel.
