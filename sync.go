@@ -199,35 +199,26 @@ func waitNextSync(ctx context.Context) bool {
 	if cfg.Repeat == 0 {
 		return false
 	}
-	select {
-	case <-time.After(cfg.Repeat):
-	case name := <-notifier.HasUpdates:
-		log.Infoln("Change detected at remote filesystem:", name)
-		drainChannels(notifier.HasUpdates, watcherUpdates)
-	case name := <-watcherUpdates:
-		log.Infoln("Change detected at local filesystem:", name)
-		drainChannels(notifier.HasUpdates, watcherUpdates)
-	case <-ctx.Done():
-		return false
+	var tc <-chan time.Time
+	startTimer := func() {
+		if tc == nil {
+			tc = time.After(5 * time.Second)
+		}
 	}
-	return true
-}
-
-func drainChannels(chs ...chan string) {
-	for _, ch := range chs {
-		drainChannel(ch)
-	}
-}
-
-func drainChannel(ch chan string) {
 	for {
 		select {
-		case _, ok := <-ch:
-			if !ok {
-				return
-			}
-		default:
-			return
+		case <-time.After(cfg.Repeat):
+			return true
+		case name := <-notifier.HasUpdates:
+			log.Infof("Change detected at remote filesystem: %q", name)
+			startTimer()
+		case name := <-watcherUpdates:
+			log.Infof("Change detected at local filesystem: %q", name)
+			startTimer()
+		case <-tc:
+			return true
+		case <-ctx.Done():
+			return false
 		}
 	}
 }
