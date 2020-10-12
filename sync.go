@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
-	"runtime"
 	"time"
 
 	"github.com/adrg/xdg"
@@ -207,7 +206,7 @@ func waitNextSync(ctx context.Context) bool {
 		}
 	}
 	var d time.Duration
-	if notifier.Connected() && runtime.GOOS != "linux" {
+	if notifier.Connected() && watcher.Recursive {
 		d = 2 * time.Hour
 	} else {
 		d = 15 * time.Minute

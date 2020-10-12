@@ -8,6 +8,8 @@ import (
 	"github.com/fsnotify/fsevents"
 )
 
+const Recursive = true
+
 const mask = fsevents.ItemCreated | fsevents.ItemRemoved | fsevents.ItemRenamed | fsevents.ItemModified | fsevents.ItemInodeMetaMod
 
 func Watch(ctx context.Context, dir string) (chan string, error) {

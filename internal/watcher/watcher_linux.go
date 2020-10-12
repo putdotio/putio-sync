@@ -7,6 +7,8 @@ import (
 	"github.com/fsnotify/fsnotify"
 )
 
+const Recursive = false
+
 const mask = fsnotify.Create | fsnotify.Write | fsnotify.Remove | fsnotify.Rename
 
 func Watch(ctx context.Context, dir string) (chan string, error) {

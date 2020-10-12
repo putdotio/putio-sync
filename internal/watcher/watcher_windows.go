@@ -9,6 +9,8 @@ import (
 	"github.com/cenkalti/log"
 )
 
+const Recursive = true
+
 // Buffer size cannot exceed 64K
 const bufferSize = 32 << 10
 
