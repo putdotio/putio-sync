@@ -118,7 +118,7 @@ func syncOnce(ctx context.Context) error {
 		return err
 	}
 	dirCache = dircache.New(client, defaultTimeout, remoteFolderID)
-	if cfg.Once {
+	if !cfg.Once {
 		notifier.SetToken(token)
 		notifier.Start()
 	}
