@@ -40,6 +40,7 @@ var (
 	tempDirPath    string
 	syncing        bool
 	syncStatus     = "Starting sync..."
+	triggerSyncC   = make(chan struct{}, 1)
 )
 
 func Sync(ctx context.Context, config Config) error {
@@ -221,10 +222,20 @@ func waitNextSync(ctx context.Context) bool {
 		case name := <-watcherUpdates:
 			log.Debugf("Change detected at local filesystem: %q", name)
 			startTimer()
+		case <-triggerSyncC:
+			log.Debugf("Sync triggered manually")
+			return true
 		case <-tc:
 			return true
 		case <-ctx.Done():
 			return false
 		}
+	}
+}
+
+func triggerSync() {
+	select {
+	case triggerSyncC <- struct{}{}:
+	default:
 	}
 }

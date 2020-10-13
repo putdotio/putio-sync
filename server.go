@@ -25,6 +25,7 @@ func newServer(addr string) *httpServer {
 	m := http.NewServeMux()
 	m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) { _, _ = w.Write([]byte("putio-sync")) })
 	m.HandleFunc("/syncing", func(w http.ResponseWriter, r *http.Request) { _, _ = w.Write([]byte(fmt.Sprintf("%v", syncing))) })
+	m.HandleFunc("/trigger", func(w http.ResponseWriter, r *http.Request) { triggerSync() })
 	m.HandleFunc("/status", func(w http.ResponseWriter, r *http.Request) {
 		b, _ := json.Marshal(map[string]string{"status": syncStatus})
 		_, _ = w.Write(b)
