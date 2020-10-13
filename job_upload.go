@@ -48,6 +48,12 @@ func (d *uploadJob) tryResume(ctx context.Context) bool {
 }
 
 func (d *uploadJob) Run(ctx context.Context) error {
+	modwatch, err := watcher.WatchFileModification(ctx, d.localFile.FullPath())
+	if err != nil {
+		return err
+	}
+	defer modwatch.Stop()
+
 	ok := d.tryResume(ctx)
 	if !ok {
 		in, err := inode.Get(d.localFile.FullPath(), d.localFile.Info())
@@ -75,11 +81,6 @@ func (d *uploadJob) Run(ctx context.Context) error {
 			return err
 		}
 	}
-	modwatch, err := watcher.WatchFileModification(ctx, d.localFile.FullPath())
-	if err != nil {
-		return err
-	}
-	defer modwatch.Stop()
 	f, err := os.Open(d.localFile.FullPath())
 	if err != nil {
 		return err

@@ -1,6 +1,7 @@
 package updates
 
 import (
+	"context"
 	"encoding/json"
 	"strconv"
 	"sync"
@@ -24,6 +25,7 @@ type Notifier struct {
 	token     string
 	started   bool
 	connected int32
+	watcher   *FileWatcher
 }
 
 func NewNotifier(wsURL string, handshakeTimeout, writeTimeout time.Duration) *Notifier {
@@ -73,7 +75,32 @@ func (s *Notifier) Connected() bool {
 	return atomic.LoadInt32(&s.connected) == 1
 }
 
-func (s *Notifier) notifyUpdate(name string) {
+func (s *Notifier) WatchFile(ctx context.Context, id int64) *FileWatcher {
+	s.m.Lock()
+	defer s.m.Unlock()
+
+	s.watcher = newFileWatcher(ctx, id, func() bool {
+		s.m.Lock()
+		defer s.m.Unlock()
+		if s.watcher == nil {
+			return false
+		}
+		modified := s.watcher.modified
+		s.watcher.cancel()
+		s.watcher = nil
+		return modified
+	})
+
+	return s.watcher
+}
+
+func (s *Notifier) notifyUpdate(id int64, name string) {
+	s.m.Lock()
+	s.watcher.notify(id)
+	s.m.Unlock()
+	if name == "" {
+		name = strconv.FormatInt(id, 10)
+	}
 	select {
 	case s.HasUpdates <- name:
 	default:
@@ -100,7 +127,7 @@ func (s *Notifier) writer() {
 				ws = nil
 				break
 			}
-			s.notifyUpdate("WEBSOCKET_CONNECTED")
+			s.notifyUpdate(-1, "WEBSOCKET_CONNECTED")
 		case <-s.closeC:
 			if ws != nil {
 				ws.Close()
@@ -157,27 +184,16 @@ func (s *Notifier) reader() {
 		}
 		switch msg.Type {
 		case "file_create", "file_update", "file_delete":
-			name, err := readName(msg.Value)
-			if err != nil {
-				name = strconv.FormatInt(readID(msg.Value), 10)
-			}
-			s.notifyUpdate(name)
+			var val eventValue
+			_ = json.Unmarshal(msg.Value, &val)
+			log.Debugf("Remote event received: %s - %d - %s", msg.Type, val.ID, val.Name)
+			s.notifyUpdate(val.ID, val.Name)
 		}
 	}
 }
 
-func readName(b json.RawMessage) (string, error) {
-	var v struct {
-		Name string `json:"name"`
-	}
-	err := json.Unmarshal(b, &v)
-	return v.Name, err
-}
-
-func readID(b json.RawMessage) int64 {
-	var v struct {
-		ID int64 `json:"id"`
-	}
-	_ = json.Unmarshal(b, &v)
-	return v.ID
+// ID is always included in event details but Name may not be present.
+type eventValue struct {
+	ID   int64  `json:"id"`
+	Name string `json:"name"`
 }

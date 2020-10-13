@@ -64,6 +64,9 @@ func (d *downloadJob) tryResume() io.WriteCloser {
 }
 
 func (d *downloadJob) Run(ctx context.Context) error {
+	fileWatcher := notifier.WatchFile(ctx, d.remoteFile.PutioFile().ID)
+	defer fileWatcher.Stop()
+
 	wc := d.tryResume()
 	if wc == nil {
 		f, err := ioutil.TempFile(tempDirPath, "download-")
@@ -87,9 +90,10 @@ func (d *downloadJob) Run(ctx context.Context) error {
 	}
 
 	remaining := d.state.Size - d.state.Offset
-	if remaining > 0 {
-		ctx, cancel := context.WithCancel(ctx)
+	if remaining > 0 { // nolint: nestif
+		ctx, cancel := context.WithCancel(fileWatcher.Context())
 		defer cancel()
+
 		rc, err := d.openRemote(ctx, d.state.Offset)
 		if err != nil {
 			return err
@@ -115,6 +119,12 @@ func (d *downloadJob) Run(ctx context.Context) error {
 		err = d.state.Write()
 		if err != nil {
 			return err
+		}
+
+		modified := fileWatcher.Stop()
+		if modified {
+			log.Warningln("File modified while downloading")
+			return nil
 		}
 
 		if copyErr != nil {
@@ -143,14 +153,12 @@ func (d *downloadJob) Run(ctx context.Context) error {
 	return d.state.Write()
 }
 
-func (d *downloadJob) openRemote(baseCtx context.Context, offset int64) (rc io.ReadCloser, err error) {
-	ctx, cancel := context.WithTimeout(baseCtx, defaultTimeout)
-	defer cancel()
+func (d *downloadJob) openRemote(ctx context.Context, offset int64) (rc io.ReadCloser, err error) {
 	u, err := client.Files.URL(ctx, d.remoteFile.PutioFile().ID, true)
 	if err != nil {
 		return
 	}
-	req, err := http.NewRequestWithContext(baseCtx, http.MethodGet, u, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
 	if err != nil {
 		return
 	}

@@ -216,10 +216,10 @@ func waitNextSync(ctx context.Context) bool {
 		case <-time.After(d):
 			return true
 		case name := <-notifier.HasUpdates:
-			log.Infof("Change detected at remote filesystem: %q", name)
+			log.Debugf("Change detected at remote filesystem: %q", name)
 			startTimer()
 		case name := <-watcherUpdates:
-			log.Infof("Change detected at local filesystem: %q", name)
+			log.Debugf("Change detected at local filesystem: %q", name)
 			startTimer()
 		case <-tc:
 			return true

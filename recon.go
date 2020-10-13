@@ -96,6 +96,8 @@ func syncFresh(sf *syncFile) iJob {
 				remoteFile: sf.remote,
 			}
 		}
+	case sf.local == nil && sf.remote == nil:
+		return nil
 	default:
 		log.Errorf("Unhandled case for %q", sf.relpath)
 		return nil
