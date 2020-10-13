@@ -22,7 +22,7 @@ Usage
 
 Run the program with your account credentials:
 ```sh
-putio-sync -username <username> -password <password>
+PUTIO_Username=<username> PUTIO_Password=<password> putio-sync
 ```
 
 Then program is going to sync the contents of these folders:
