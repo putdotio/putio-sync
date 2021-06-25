@@ -43,7 +43,10 @@ func (r *Progress) Start() {
 func (r *Progress) run() {
 	for range r.ticker.C {
 		offset := atomic.LoadInt64(&r.offset)
-		progress := (offset * 100) / r.size
+		var progress int64
+		if r.size != 0 {
+			progress = (offset * 100) / r.size
+		}
 		speed := r.counter.Rate() / (1 << 10)
 		log.Infof("%s %d/%d MB (%d%%) %d KB/s", r.prefix, offset/(1<<20), r.size/(1<<20), progress, speed)
 	}
