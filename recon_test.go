@@ -1,7 +1,6 @@
 package putiosync
 
 import (
-	"io/ioutil"
 	"os"
 	"testing"
 	"time"
@@ -45,7 +44,7 @@ type FakeLocalFile struct {
 }
 
 func fakeLocalFile(t *testing.T, relpath string) *FakeLocalFile {
-	f, err := ioutil.TempFile("", "")
+	f, err := os.CreateTemp("", "")
 	if err != nil {
 		t.Fatal(err)
 	}

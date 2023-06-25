@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -69,7 +68,7 @@ func (d *downloadJob) Run(ctx context.Context) error {
 
 	wc := d.tryResume()
 	if wc == nil {
-		f, err := ioutil.TempFile(tempDirPath, "download-")
+		f, err := os.CreateTemp(tempDirPath, "download-")
 		if err != nil {
 			return err
 		}
