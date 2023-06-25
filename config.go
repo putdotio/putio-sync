@@ -1,6 +1,7 @@
 package putiosync
 
 import (
+	"os"
 	"strings"
 
 	"github.com/knadh/koanf"
@@ -55,7 +56,7 @@ func (c *Config) validate() error {
 func (c *Config) Read(configPath string) error {
 	k := koanf.New(".")
 	err := k.Load(file.Provider(configPath), toml.Parser())
-	if err != nil {
+	if err != nil && !os.IsNotExist(err) {
 		return err
 	}
 	err = k.Load(env.Provider("PUTIO_", ".", func(s string) string {

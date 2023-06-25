@@ -71,7 +71,7 @@ func main() {
 	log.Infof("Using config file %q", configPath)
 
 	err = config.Read(configPath)
-	if err != nil && !os.IsNotExist(err) {
+	if err != nil {
 		log.Fatal(err)
 	}
 
