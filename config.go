@@ -30,6 +30,8 @@ type Config struct {
 	// Token must be prefixed with "token/" (without quotes).
 	// In that case, Username is not required.
 	Password string
+	// Sync files to/from this dir in computer.
+	LocalDir string
 	// Do not make changes on filesystems. Only calculate what needs to be done.
 	DryRun bool
 	// Stop after first sync operation.
@@ -65,5 +67,16 @@ func (c *Config) Read(configPath string) error {
 	if err != nil {
 		return err
 	}
-	return k.Unmarshal("", c)
+	err = k.Unmarshal("", c)
+	if err != nil {
+		return err
+	}
+	c.setDefaults()
+	return nil
+}
+
+func (c *Config) setDefaults() {
+	if c.LocalDir == "" {
+		c.LocalDir = "~/putio-sync"
+	}
 }

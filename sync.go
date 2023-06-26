@@ -19,10 +19,7 @@ import (
 	"go.etcd.io/bbolt"
 )
 
-const (
-	folderName     = "putio-sync"
-	defaultTimeout = 10 * time.Second
-)
+const defaultTimeout = 10 * time.Second
 
 var ErrInvalidCredentials = errors.New("invalid credentials")
 

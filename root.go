@@ -3,17 +3,19 @@ package putiosync
 import (
 	"context"
 	"os"
-	"path/filepath"
 
 	"github.com/putdotio/go-putio"
+	"github.com/syncthing/syncthing/lib/fs"
 )
 
+const remoteFolderName = "putio-sync"
+
 func ensureRoots(baseCtx context.Context) error {
-	home, err := os.UserHomeDir()
+	var err error
+	localPath, err = fs.ExpandTilde(cfg.LocalDir)
 	if err != nil {
 		return err
 	}
-	localPath = filepath.Join(home, folderName)
 	err = os.MkdirAll(localPath, 0777)
 	if err != nil {
 		return err
@@ -27,7 +29,7 @@ func ensureRoots(baseCtx context.Context) error {
 	found := false
 	var f putio.File
 	for _, f = range folders {
-		if f.IsDir() && f.Name == folderName {
+		if f.IsDir() && f.Name == remoteFolderName {
 			found = true
 			break
 		}
@@ -35,7 +37,7 @@ func ensureRoots(baseCtx context.Context) error {
 	if !found {
 		ctx, cancel = context.WithTimeout(baseCtx, defaultTimeout)
 		defer cancel()
-		f, err = client.Files.CreateFolder(ctx, folderName, 0)
+		f, err = client.Files.CreateFolder(ctx, remoteFolderName, 0)
 		if err != nil {
 			return err
 		}
