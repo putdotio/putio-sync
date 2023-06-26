@@ -3,7 +3,9 @@ package putiosync
 import (
 	"fmt"
 	"os"
+	"strings"
 
+	"github.com/cenkalti/log"
 	"github.com/putdotio/go-putio"
 	"github.com/putdotio/putio-sync/v2/internal/walker"
 	"golang.org/x/text/unicode/norm"
@@ -78,4 +80,20 @@ func groupFiles(states []stateType, localFiles []*walker.LocalFile, remoteFiles 
 		sf.state = &s
 	}
 	return m
+}
+
+func filterOutInvalidNames(syncFiles map[string]*syncFile) {
+	invalidNames := make([]string, 0, len(syncFiles))
+	for relpath := range syncFiles {
+		for _, s := range strings.Split(relpath, "/") {
+			if shouldIgnoreName(s) {
+				invalidNames = append(invalidNames, relpath)
+				break
+			}
+		}
+	}
+	for _, name := range invalidNames {
+		log.Warningf("Special characters in file name, skipping sync: %q", name)
+		delete(syncFiles, name)
+	}
 }

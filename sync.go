@@ -163,6 +163,7 @@ func syncRoots(ctx context.Context) error {
 
 	// Calculate what needs to be done
 	syncFiles := groupFiles(states, localFiles, remoteFiles)
+	filterOutInvalidNames(syncFiles)
 	jobs := reconciliation(syncFiles)
 
 	// Print jobs for debugging
