@@ -1,3 +1,4 @@
+version: 2
 before:
   hooks:
     - go mod download
@@ -15,19 +16,15 @@ builds:
       - goos: darwin
         goarch: 386
 archives:
-  - format: tar.gz
+  - formats: ["tar.gz"]
     name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
-    replacements:
-      386: i386
-      amd64: x86_64
-      darwin: macos
     format_overrides:
       - goos: windows
-        format: zip
+        formats: ["zip"]
 checksum:
   name_template: 'checksums.txt'
 snapshot:
-  name_template: "{{ .Tag }}-next"
+  version_template: "{{ .Tag }}-next"
 changelog:
   sort: asc
   filters:
@@ -35,10 +32,10 @@ changelog:
     - '^docs:'
     - '^test:'
 brews:
-  - tap:
+  - repository:
       owner: putdotio
       name: homebrew-putio-sync
-    folder: Formula
+    directory: Formula
     homepage:  https://github.com/putdotio/putio-sync
     description: Put.io folder sync app
     install: |
