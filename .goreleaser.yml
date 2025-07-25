@@ -5,6 +5,8 @@ before:
 builds:
   -
     main: ./cmd/putio-sync/main.go
+    env:
+      - CGO_ENABLED=0
     goos:
       - linux
       - darwin
