@@ -6,15 +6,21 @@ builds:
   -
     main: ./cmd/putio-sync/main.go
     goos:
-      - linux
       - darwin
-      - windows
+    goarch:
+      - arm64
+      - amd64
+    env:
+      - CGO_ENABLED=1
+  -
+    main: ./cmd/putio-sync/main.go
+    goos:
+      - linux
     goarch:
       - 386
       - amd64
-    ignore:
-      - goos: darwin
-        goarch: 386
+    env:
+      - CGO_ENABLED=0
 archives:
   - formats: ["tar.gz"]
     name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
