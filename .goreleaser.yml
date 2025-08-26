@@ -3,7 +3,7 @@ before:
   hooks:
     - go mod download
 builds:
-  -
+  - id: darwin
     main: ./cmd/putio-sync/main.go
     goos:
       - darwin
@@ -12,7 +12,7 @@ builds:
       - amd64
     env:
       - CGO_ENABLED=1
-  -
+  - id: linux_windows
     main: ./cmd/putio-sync/main.go
     goos:
       - linux
