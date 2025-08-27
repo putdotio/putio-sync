@@ -40,7 +40,7 @@ changelog:
     - '^test:'
 brews:
   - repository:
-      owner: berkanteber
+      owner: putdotio
       name: homebrew-putio-sync
     directory: Formula
     homepage:  https://github.com/putdotio/putio-sync
