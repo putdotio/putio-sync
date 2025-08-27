@@ -42,7 +42,6 @@ brews:
   - repository:
       owner: putdotio
       name: homebrew-putio-sync
-      token: "{{ .ENV.GITHUB_TOKEN_HOMEBREW }}"
     directory: Formula
     homepage:  https://github.com/putdotio/putio-sync
     description: Put.io folder sync app
