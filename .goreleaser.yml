@@ -41,7 +41,8 @@ changelog:
 brews:
   - repository:
       owner: putdotio
-      name: homebrew-putio-sync
+      name: homebrew-tap
+      token: "{{ .Env.TAP_GITHUB_TOKEN }}"
     directory: Formula
     homepage:  https://github.com/putdotio/putio-sync
     description: Put.io folder sync app
