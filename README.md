@@ -10,11 +10,18 @@ If you are using MacOS or Windows, you can install desktop version: [putio-sync-
 Installing
 ----------
 
-If you are on MacOS you can install from [brew](https://brew.sh/):
+If you are on macOS you can install with [Homebrew](https://brew.sh/):
 ```sh
-brew tap putdotio/tap
-brew install putio-sync
+brew install putdotio/tap/putio-sync
 ```
+
+> [!NOTE]
+> If you previously installed via the old tap (`putdotio/putio-sync`), you'll need to uninstall first and reinstall with the new formula name:
+> ```sh
+> brew uninstall putio-sync
+> brew untap putdotio/putio-sync
+> brew install putdotio/tap/putio-sync
+> ```
 
 Otherwise, get the latest binary from [releases page](https://github.com/putdotio/putio-sync/releases).
 
